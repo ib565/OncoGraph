@@ -849,7 +849,7 @@ def analyze_genes_stream(
                 # Pass trace sink to summarizer for detailed logging
                 summarizer.trace = contextual_trace
                 summary_response = summarizer.summarize_enrichment(
-                    enrichment_result.valid_genes, enrichment_result.enrichment_results, top_n=7
+                    enrichment_result.valid_genes, enrichment_result.enrichment_results, top_n=10
                 )
             except Exception as exc:
                 import traceback

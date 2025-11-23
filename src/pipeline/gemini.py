@@ -415,8 +415,10 @@ class GeminiEnrichmentSummarizer(_GeminiBase):
                 cache.delete(cache_key)
 
         # Format enrichment results for the prompt
+        # Ensure results are sorted by significance (adjusted p-value, ascending = most significant first)
+        sorted_results = sorted(enrichment_results, key=lambda x: x.get("adjusted_p_value", float("inf")))
         formatted_results = []
-        for i, result in enumerate(enrichment_results[:top_n], 1):
+        for i, result in enumerate(sorted_results[:top_n], 1):
             formatted_results.append(
                 f"{i}. {result['term']} ({result['library']})\n"
                 f"Adjusted P-value: {result['adjusted_p_value']:.2e}\n"

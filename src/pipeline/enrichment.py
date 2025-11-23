@@ -241,7 +241,7 @@ class GeneEnrichmentAnalyzer:
 
             # Sort by adjusted p-value and limit to top results
             all_results.sort(key=lambda x: x["adjusted_p_value"])
-            top_results = all_results[:15]
+            top_results = all_results[:20]
 
             # Log enrichment results
             self._trace(

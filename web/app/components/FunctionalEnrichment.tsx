@@ -63,6 +63,45 @@ export default function FunctionalEnrichment({ onNavigateToQuery }: FunctionalEn
     genes: string[];
   } | null>(null);
 
+  // State for library filter
+  const [selectedLibraryFilter, setSelectedLibraryFilter] = useState<string | null>(null);
+
+  // Helper function to filter enrichment results by library
+  const getFilteredEnrichmentResults = useCallback(() => {
+    const allResults = partialResult?.enrichment_results || result?.enrichment_results || [];
+    if (!selectedLibraryFilter) {
+      return allResults;
+    }
+    return allResults.filter((r) => r.library === selectedLibraryFilter);
+  }, [partialResult, result, selectedLibraryFilter]);
+
+  // Helper function to filter plot data by library
+  const getFilteredPlotData = useCallback(() => {
+    const plotData = partialResult?.plot_data || result?.plot_data;
+    if (!plotData || !plotData.data || !selectedLibraryFilter) {
+      return plotData;
+    }
+
+    // Filter traces to only include the selected library
+    const filteredTraces = plotData.data.filter((trace: any) => {
+      // Trace name format is "Library Name" (with spaces), need to match library ID
+      const traceName = trace.name?.replace(/ /g, "_") || "";
+      return traceName === selectedLibraryFilter;
+    });
+
+    return {
+      ...plotData,
+      data: filteredTraces,
+    };
+  }, [partialResult, result, selectedLibraryFilter]);
+
+  // Get libraries present in current results (for dropdown options)
+  const getLibrariesInResults = useCallback(() => {
+    const allResults = partialResult?.enrichment_results || result?.enrichment_results || [];
+    const librariesSet = new Set(allResults.map((r) => r.library));
+    return Array.from(librariesSet).filter((lib) => currentLibraries.includes(lib));
+  }, [partialResult, result, currentLibraries]);
+
   async function loadPreset(presetId: string) {
     if (!API_URL) {
       setHypothesisState({ error: "NEXT_PUBLIC_API_URL is not configured" });
@@ -143,6 +182,9 @@ export default function FunctionalEnrichment({ onNavigateToQuery }: FunctionalEn
       summaryResult: null,
       isSummaryLoading: false
     });
+    
+    // Reset library filter when starting new analysis
+    setSelectedLibraryFilter(null);
 
     try {
       // Build URL with libraries parameter
@@ -350,10 +392,17 @@ export default function FunctionalEnrichment({ onNavigateToQuery }: FunctionalEn
     const source = result ?? partialResult;
     if (!source || !source.enrichment_results || source.enrichment_results.length === 0) return;
 
-    const csvContent = buildEnrichmentCsv(source, result ? "Complete Result" : "Partial Result");
+    // Use filtered results for export
+    const filteredResults = getFilteredEnrichmentResults();
+    const filteredSource = {
+      ...source,
+      enrichment_results: filteredResults,
+    };
+
+    const csvContent = buildEnrichmentCsv(filteredSource, result ? "Complete Result" : "Partial Result");
     const filename = `functional-enrichment_${Date.now()}.csv`;
     downloadCsv(filename, csvContent);
-  }, [buildEnrichmentCsv, partialResult, result]);
+  }, [buildEnrichmentCsv, partialResult, result, getFilteredEnrichmentResults]);
 
   const hasEnrichmentResults =
     (partialResult?.enrichment_results?.length ?? 0) > 0 ||
@@ -608,9 +657,64 @@ export default function FunctionalEnrichment({ onNavigateToQuery }: FunctionalEn
             </div>
           </div>
 
+          {/* Library Filter - Full Width */}
+          {((partialResult && partialResult.enrichment_results.length > 0) || 
+            (result && result.enrichment_results.length > 0)) && (
+            <div className="layout-row">
+              <div className="layout-column full-width">
+                <div className="card" style={{ marginBottom: "16px" }}>
+                  <header className="panel-header">
+                    <h3 className="panel-title">Filter by Library</h3>
+                    <p className="panel-copy">
+                      Filter enrichment results and visualization by database library.
+                    </p>
+                  </header>
+                  <div className="card-content">
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <label htmlFor="library-filter" style={{ fontSize: "14px", fontWeight: "500" }}>
+                        Show results from:
+                      </label>
+                      <select
+                        id="library-filter"
+                        value={selectedLibraryFilter || ""}
+                        onChange={(e) => setSelectedLibraryFilter(e.target.value || null)}
+                        style={{
+                          padding: "6px 12px",
+                          fontSize: "14px",
+                          borderRadius: "4px",
+                          border: "1px solid var(--border)",
+                          backgroundColor: "var(--bg-surface)",
+                          color: "var(--text-1)",
+                          cursor: "pointer",
+                          minWidth: "200px",
+                        }}
+                      >
+                        <option value="">All Libraries</option>
+                        {getLibrariesInResults().map((libId) => {
+                          const lib = availableLibraries.find((l) => l.id === libId);
+                          return (
+                            <option key={libId} value={libId}>
+                              {lib ? lib.label : libId.replace(/_/g, " ")}
+                            </option>
+                          );
+                        })}
+                      </select>
+                      {selectedLibraryFilter && (
+                        <span style={{ fontSize: "12px", color: "var(--text-2)" }}>
+                          Showing {getFilteredEnrichmentResults().length} result{getFilteredEnrichmentResults().length !== 1 ? "s" : ""}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Dot Plot Visualization - Full Width */}
           {((partialResult && partialResult.plot_data && Object.keys(partialResult.plot_data).length > 0) || 
-            (result && result.plot_data && Object.keys(result.plot_data).length > 0)) && (
+            (result && result.plot_data && Object.keys(result.plot_data).length > 0)) &&
+            getFilteredPlotData()?.data && getFilteredPlotData()?.data.length > 0 && (
             <div className="layout-row">
               <div className="layout-column full-width">
                 <div className="card graph-card">
@@ -624,16 +728,16 @@ export default function FunctionalEnrichment({ onNavigateToQuery }: FunctionalEn
                   <div className="card-content">
                     <div className="graph-shell">
                       <PlotlyChart
-                        data={(partialResult?.plot_data?.data || result?.plot_data?.data) || []}
-                        layout={(partialResult?.plot_data?.layout || result?.plot_data?.layout) || {}}
+                        data={getFilteredPlotData()?.data || []}
+                        layout={getFilteredPlotData()?.layout || {}}
                         onClick={(event) => {
                           if (event.points && event.points.length > 0) {
                             const point = event.points[0];
                             const term = point.y;
                             const library = point.data.name?.replace(/ /g, "_") || "";
                             
-                            // Find the enrichment result for this term
-                            const enrichmentResults = partialResult?.enrichment_results || result?.enrichment_results || [];
+                            // Find the enrichment result for this term using filtered results
+                            const enrichmentResults = getFilteredEnrichmentResults();
                             const matchingResult = enrichmentResults.find(
                               (item: any) => item.term === term && item.library === library
                             );
@@ -718,8 +822,20 @@ export default function FunctionalEnrichment({ onNavigateToQuery }: FunctionalEn
                     </div>
                   </header>
                   <div className="card-content">
-                    <div className="enrichment-scroll" role="list">
-                      {(partialResult?.enrichment_results || result?.enrichment_results || []).map((item, index) => (
+                    {getFilteredEnrichmentResults().length === 0 ? (
+                      <div style={{ 
+                        padding: "24px", 
+                        textAlign: "center", 
+                        color: "#666",
+                        fontStyle: "italic"
+                      }}>
+                        {selectedLibraryFilter 
+                          ? `No enrichment results found for the selected library.`
+                          : "No enrichment results to display."}
+                      </div>
+                    ) : (
+                      <div className="enrichment-scroll" role="list">
+                        {getFilteredEnrichmentResults().map((item, index) => (
                         <article className="row-card" key={`enrichment-${index}`} role="listitem">
                           <header className="row-heading">
                             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -784,7 +900,8 @@ export default function FunctionalEnrichment({ onNavigateToQuery }: FunctionalEn
                           </dl>
                         </article>
                       ))}
-                    </div>
+                      </div>
+                    )}
                     {/* Methods note */}
                     <div className="methods-note" style={{ 
                       marginTop: "16px", 
