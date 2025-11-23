@@ -630,10 +630,11 @@ def get_gene_set(
             """,
         },
         "resistance_biomarker_genes": {
-            "description": "All genes with known resistance biomarkers",
+            "description": "Resistance Biomarkers in Colorectal Cancer",
             "cypher": """
                 MATCH (b:Biomarker)-[r:AFFECTS_RESPONSE_TO]->(t:Therapy)
                 WHERE toLower(r.effect) = 'resistance'
+                  AND toLower(r.disease_name) CONTAINS 'colorectal'
                 OPTIONAL MATCH (b)-[:VARIANT_OF]->(g:Gene)
                 WITH CASE WHEN b:Gene THEN b.symbol ELSE g.symbol END AS gene_symbol
                 WHERE gene_symbol IS NOT NULL

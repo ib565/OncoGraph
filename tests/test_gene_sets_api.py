@@ -49,7 +49,7 @@ def test_get_gene_set_resistance():
     assert "genes" in data
     assert "description" in data
     assert isinstance(data["genes"], list)
-    assert data["description"] == "All genes with known resistance biomarkers"
+    assert data["description"] == "Resistance Biomarkers in Colorectal Cancer"
 
 
 def test_get_gene_set_egfr():

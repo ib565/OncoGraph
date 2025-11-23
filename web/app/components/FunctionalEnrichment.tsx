@@ -23,7 +23,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const PRESET_OPTIONS: PresetOption[] = [
   { id: "colorectal_therapy_genes", description: "Genes targeted by therapies for Colorectal Cancer" },
   { id: "lung_therapy_genes", description: "Genes targeted by therapies for Lung Cancer" },
-  { id: "resistance_biomarker_genes", description: "All genes with known resistance biomarkers" },
+  { id: "resistance_biomarker_genes", description: "Resistance Biomarkers in Colorectal Cancer" },
   { id: "egfr_pathway_genes", description: "Genes targeted by EGFR pathway therapies" },
   { id: "top_biomarker_genes", description: "Top biomarker genes across all cancers" },
 ];
