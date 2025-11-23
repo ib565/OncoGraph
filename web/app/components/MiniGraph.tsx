@@ -219,9 +219,7 @@ export function MiniGraph({ rows, height = "100%" }: MiniGraphProps) {
 
         // Draw predictive edges only when we have an effect value
         if (biomarkerNodeId && effect) {
-          const labelParts = [effect];
-          if (diseaseName) labelParts.push(`(${diseaseName})`);
-          const label = labelParts.join(" ");
+          const label = effect;
           const edgeId = `AFFECTS_RESPONSE_TO|${biomarkerNodeId}|${therapyId}|${label}`;
           addEdge(edgeId, biomarkerNodeId, therapyId, label, {
             relationship: "AFFECTS_RESPONSE_TO",
