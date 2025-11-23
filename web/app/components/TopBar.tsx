@@ -43,6 +43,22 @@ export default function TopBar() {
       </nav>
 
       <div className="top-bar-actions">
+        <a
+          href="https://github.com/ib565/OncoGraph-Engine"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="top-bar-link"
+          title="View on GitHub"
+        >
+          GitHub
+        </a>
+        <a
+          href="mailto:ish.bhartiya@gmail.com"
+          className="top-bar-link"
+          title="Contact via email"
+        >
+          Contact
+        </a>
         <button
           onClick={clearAllState}
           className="clear-button"
