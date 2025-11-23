@@ -578,13 +578,1897 @@
     "id": "egfr_l858r_gefitinib_lung_response",
     "tab": "evidence_precision",
     "question": "What is the predicted response of EGFR L858R to gefitinib in lung cancer?",
-    "cachedResponse": null
+    "cachedResponse": {
+      "answer": "EGFR L858R is predicted to be sensitive to Gefitinib in **Lung Non-small Cell Carcinoma** and **Lung Adenocarcinoma**.\n\n*   **EGFR L858R** (Level A, 3 items): Sensitive to **Gefitinib** in **Lung Non-small Cell Carcinoma**. [PMID:21531810, PMID:24263064, PMID:24755888]\n*   **EGFR L858R** (Level B, 5 items): Sensitive to **Gefitinib** in **Lung Non-small Cell Carcinoma**. [PMID:15118125, PMID:18509184, PMID:20038723]\n*   **EGFR L858R** (Level B, 3 items): Sensitive to **Gefitinib** in **Lung Adenocarcinoma**. [PMID:15329413, PMID:22370314, PMID:27022112]",
+      "cypher": "MATCH (v:Variant:Biomarker)-[:VARIANT_OF]->(g:Gene)\nWHERE (toLower(g.symbol) = toLower('EGFR') OR any(s IN coalesce(g.synonyms, []) WHERE toLower(s) = toLower('EGFR')))\n  AND toLower(v.name) CONTAINS toLower('L858R')\nMATCH (v)-[rel:AFFECTS_RESPONSE_TO]->(t:Therapy)\nWHERE (toLower(t.name) = toLower('gefitinib') OR any(s IN coalesce(t.synonyms, []) WHERE toLower(s) = toLower('gefitinib')))\n  AND toLower(rel.disease_name) CONTAINS toLower('lung')\nRETURN\n  v.name AS variant_name,\n  g.symbol AS gene_symbol,\n  t.name AS therapy_name,\n  rel.effect AS effect,\n  rel.disease_name AS disease_name,\n  coalesce(rel.pmids, []) AS pmids,\n  coalesce(rel.best_evidence_level, '') AS best_evidence_level,\n  coalesce(rel.evidence_levels, []) AS evidence_levels,\n  coalesce(rel.evidence_count, 0) AS evidence_count,\n  rel.avg_rating AS avg_rating,\n  rel.max_rating AS max_rating\nORDER BY best_evidence_level ASC, evidence_count DESC\nLIMIT 100",
+      "rows": [
+        {
+          "variant_name": "EGFR L858R OR EGFR Exon 19 Deletion",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Gefitinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "21531810",
+            "24263064",
+            "24755888"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A",
+            "B",
+            "C"
+          ],
+          "evidence_count": 3,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "EGFR L858R",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Gefitinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "15118125",
+            "18509184",
+            "20038723",
+            "24457318",
+            "24736073"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B",
+            "D"
+          ],
+          "evidence_count": 5,
+          "avg_rating": 3.6,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "EGFR L858R",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Gefitinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Adenocarcinoma",
+          "pmids": [
+            "15329413",
+            "22370314",
+            "27022112"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B",
+            "C"
+          ],
+          "evidence_count": 3,
+          "avg_rating": 2,
+          "max_rating": 3
+        }
+      ],
+      "updatedAt": "2025-11-23T09:02:10.906Z"
+    }
   },
   {
     "id": "therapies_variant_biomarkers_nsclc",
     "tab": "biomarkers_resistance",
     "question": "List all therapies with variant-level biomarkers in non-small cell lung cancer.",
-    "cachedResponse": null
+    "cachedResponse": {
+      "answer": "The following therapies have variant-level biomarkers in non-small cell lung cancer, ranked by evidence strength:\n\n*   **EGFR L858R / EGFR Exon 19 Deletion** (Level A, 12 items): These variants are associated with sensitivity to **Osimertinib**, **Gefitinib**, **Amivantamab**, **Dacomitinib**, and **Erlotinib**. [PMID: 32955177, PMID: 21531810, PMID: 37879444, PMID: 28958502, PMID: 15329413]\n*   **EGFR T790M** (Level A, 6 items): This variant is associated with sensitivity to **Osimertinib** and resistance to **Erlotinib**. [PMID: 24893891, PMID: 15737014]\n*   **EGFR Exon 20 Insertion** (Level A, 3 items): This variant is associated with sensitivity to **Amivantamab**, **Mobocertinib**, and **Chemotherapy**. [PMID: 34339292, PMID: 34647988, PMID: 37870976]\n*   **ERBB2 Exon 20 Insertion** (Level A, 2 items): This variant is associated with sensitivity to **Trastuzumab Deruxtecan**. [PMID: 34534430, PMID: 37694347]\n*   **BRAF V600E** (Level A, 2 items): This variant is associated with sensitivity to **Dabrafenib** and **Trametinib**. [PMID: 27283860]\n*   **EGFR L858R** (Level A, 1 item): This variant is associated with sensitivity to **Erlotinib**. [PMID: 15329413]\n*   **EGFR S768I / EGFR G719A / EGFR L861Q** (Level A, 1 item): These variants are associated with sensitivity to **Afatinib**. [PMID: 22452895]\n*   **ERBB2 A775_G776insTVMA / ERBB2 A775_G776insV / ERBB2 A775_G776insVVMA / ERBB2 G776_V777delinsVCD / ERBB2 G776delinsLC / ERBB2 G776delinsVC / ERBB2 G778_P780dup / ERBB2 G778_S779insLPS / ERBB2 L755A / ERBB2 L755M / ERBB2 L755P / ERBB2 P780_Y781insGSP** (Level A, 1 item each): These ERBB2 variants are associated with sensitivity to **Trastuzumab Deruxtecan** or **Zongertinib**. [PMID: 37694347, PMID: 40293180]\n*   **KRAS G12C** (Level A, 1 item): This variant is associated with sensitivity to **Sotorasib**. [PMID: 34096690]\n*   **EGFR Mutation** (Level A, 2 items): These mutations are associated with sensitivity to **Datopotamab Deruxtecan** and **Datopotamab Deruxtecan Regimen**. [PMID: 39250535, PMID: 39761483]\n*   **EGFR Mutation** (Level B, 5 items): Associated with sensitivity to **Gefitinib**. [PMID: 15329413, PMID: 19692680, PMID: 20022809, PMID: 20038723, PMID: 21258250]\n*   **EGFR Mutation** (Level B, 4 items): Associated with sensitivity to **Erlotinib**. [PMID: 15329413, PMID: 21258250, PMID: 21783417, PMID: 21969500]\n*   **EGFR Amplification** (Level B, 3 items): Associated with sensitivity to **Erlotinib** and **Gefitinib**. [PMID: 20826716, PMID: 26722081, PMID: 27664271]\n*   **EGFR Exon 19 Deletion** (Level B, 3 items): Associated with sensitivity to **Gefitinib**. [PMID: 16730237, PMID: 16818686, PMID: 18509184]\n*   **EGFR T790M** (Level B, 4 items): Associated with resistance to **Gefitinib**. [PMID: 15728811, PMID: 15737014, PMID: 17020982, PMID: 27304188]\n*   **KRAS Mutation** (Level B, 4 items): Associated with sensitivity to **Docetaxel**. [PMID: 20038723, PMID: 23200175, PMID: 26209642, PMID: 27876675]\n*   **KRAS Mutation** (Level B, 4 items): Associated with sensitivity to **Trametinib**. [PMID: 22805291, PMID: 24685132, PMID: 25722381, PMID: 27876675]\n*   **RRM1 Underexpression** (Level B, 4 items): Associated with sensitivity to **Gemcitabine**. [PMID: 19884554, PMID: 23038758, PMID: 24595080, PMID: 24647522]\n*   **EGFR T790M** (Level B, 3 items): Associated with sensitivity to **Rociletinib**. [PMID: 24065731, PMID: 25923550, PMID: 26515464]\n*   **KRAS Mutation** (Level B, 3 items): Associated with sensitivity to **Erlotinib**. [PMID: 22025157, PMID: 26209642, PMID: 26802155]\n*   **KRAS Mutation** (Level B, 3 items): Associated with sensitivity to **Selumetinib**. [PMID: 23200175, PMID: 25199829, PMID: 26802155]\n*   **EGFR G719S** (Level B, 2 items): Associated with sensitivity to **Erlotinib** and **Gefitinib**. [PMID: 19147750, PMID: 26124334, PMID: 15118125, PMID: 26124334]\n*   **EGFR L858R** (Level B, 2 items): Associated with sensitivity to **Dacomitinib**. [PMID: 18089823, PMID: 26768165]\n*   **EGFR Mutation** (Level B, 2 items): Associated with sensitivity to **Afatinib**. [PMID: 22452896, PMID: 27083334]\n*   **EGFR Exon 19 Deletion** (Level B, 1 item): Associated with resistance to **Anti-PD-L1 Monoclonal Antibody** and **Anti-PD1 Monoclonal Antibody**. [PMID: 31086949]\n*   **EGFR Exon 19 Deletion** (Level B, 1 item): Associated with sensitivity to **Dacomitinib**. [PMID: 26768165]\n*   **EGFR Exon 20 Insertion** (Level B, 1 item): Associated with sensitivity to **Osimertinib**. [PMID: 31208370]\n*   **EGFR G719** (Level B, 1 item): Associated with sensitivity to **Erlotinib** and **Gefitinib**. [PMID: 21531810]\n*   **EGFR L861** (Level B, 1 item): Associated with sensitivity to **Erlotinib** and **Gefitinib**. [PMID: 21531810]\n*   **EGFR Gain-of-function** (Level B, 1 item): Associated with sensitivity to **Gefitinib**. [PMID: 15118073]\n*   **EGFR Rare Exon 18-21 Mutation** (Level B, 2 items): Associated with sensitivity to **Erlotinib** and **Gefitinib**. [PMID: 21531810]\n*   **ERBB2 Amplification** (Level B, 2 items): Associated with sensitivity to **Trastuzumab**. [PMID: 14679114, PMID: 14967075]\n*   **MET Exon 14 Skipping Mutation** (Level B, 2 items): Associated with sensitivity to **Capmatinib** and **Crizotinib**. [PMID: 32877583, PMID: 123413]\n*   **TYMS Overexpression** (Level B, 2 items): Associated with resistance to **Pemetrexed**. [PMID: 23060591, PMID: 26502926]\n*   **ABCB1 I1145I** (Level B, 1 item): Associated with sensitivity to **Carboplatin** and **Cisplatin**. [PMID: 22296372]\n*   **ALK Mutation** (Level B, 1 item): Associated with sensitivity to **Ceritinib**. [PMID: 24670165]\n*   **AURKA Overexpression** (Level B, 1 item): Associated with resistance to **Cisplatin**. [PMID: 25082261]\n*   **BCL2L11 Deletion Polymorphism** (Level B, 1 item): Associated with resistance to **Epidermal Growth Factor Receptor Tyrosine Kinase Inhibitor**. [PMID: 22426421]\n*   **BIRC5 NUCLEAR EXPRESSION** (Level B, 1 item): Associated with sensitivity to **Platinum Compound** and **Taxane Compound**. [PMID: 24961465]\n*   **BRAF V600** (Level B, 1 item): Associated with sensitivity to **Vemurafenib**. [PMID: 26287849]\n*   **BRAF V600E** (Level B, 1 item): Associated with sensitivity to **Vemurafenib**. [PMID: 29320312]\n*   **CDKN2A Loss** (Level B, 1 item): Associated with resistance to **Palbociclib**. [PMID: 174591]\n*   **EGFR Amplification** (Level B, 1 item): Associated with sensitivity to **Epidermal Growth Factor Receptor Tyrosine Kinase Inhibitor**. [PMID: 20826716]\n*   **EGFR C797S** (Level B, 1 item): Associated with resistance to **Osimertinib**. [PMID: 25939061]\n*   **EGFR Exon 18 Overexpression** (Level B, 2 items): Associated with sensitivity to **Bevacizumab** and **Erlotinib**. [PMID: 24039832]\n*   **EGFR Expression** (Level B, 1 item): Associated with sensitivity to **Gefitinib**. [PMID: 12748244]\n*   **KRAS Mutation** (Level B, 1 item): Associated with resistance to **Docetaxel** and **Selumetinib**. [PMID: 28472902]\n*   **CD274 Expression** (Level B, 5 items): Associated with sensitivity to **Pembrolizumab**, **Atezolizumab**, **Nivolumab**, and **Avelumab**. [PMID: 25891174, PMID: 26918451, PMID: 26086854, PMID: 28472902, PMID: 26970723]\n*   **CD274 Expression** (Level B, 1 item): Associated with sensitivity to **Durvalumab**. [PMID: 28472902]\n*   **AREG Expression** (Level B, 2 items): Associated with resistance to **Crizotinib**. [PMID: 21791641, PMID: 23344087]\n*   **EGFR Overexpression** (Level B, 2 items): Associated with sensitivity to **Epidermal Growth Factor Receptor Tyrosine Kinase Inhibitor**. [PMID: 22056021, PMID: 26439803]",
+      "cypher": "MATCH (b:Variant:Biomarker)-[rel:AFFECTS_RESPONSE_TO]->(t:Therapy)\nWHERE toLower(rel.disease_name) CONTAINS toLower('lung')\n  AND toLower(rel.disease_name) CONTAINS toLower('non-small')\n  AND toLower(rel.disease_name) CONTAINS toLower('cell')\nOPTIONAL MATCH (b)-[:VARIANT_OF]->(g:Gene)\nRETURN\n  b.name AS variant_name,\n  g.symbol AS gene_symbol,\n  t.name AS therapy_name,\n  rel.effect AS effect,\n  rel.disease_name AS disease_name,\n  coalesce(rel.pmids, []) AS pmids,\n  coalesce(rel.best_evidence_level, '') AS best_evidence_level,\n  coalesce(rel.evidence_levels, []) AS evidence_levels,\n  coalesce(rel.evidence_count, 0) AS evidence_count,\n  rel.avg_rating AS avg_rating,\n  rel.max_rating AS max_rating\nORDER BY best_evidence_level ASC, evidence_count DESC\nLIMIT 100",
+      "rows": [
+        {
+          "variant_name": "EGFR L858R",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Erlotinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "15329413",
+            "18408761",
+            "22285168",
+            "24353160",
+            "24457318",
+            "24736073",
+            "24868098",
+            "27612423"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A",
+            "B",
+            "C",
+            "D"
+          ],
+          "evidence_count": 8,
+          "avg_rating": 2.88,
+          "max_rating": 5
+        },
+        {
+          "variant_name": "EGFR T790M",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Osimertinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "24893891",
+            "25923549",
+            "26515464",
+            "26720284",
+            "26729184",
+            "27959700"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A",
+            "B",
+            "D"
+          ],
+          "evidence_count": 6,
+          "avg_rating": 3.67,
+          "max_rating": 5
+        },
+        {
+          "variant_name": "EGFR Exon 19 Deletion",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Erlotinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "16818686",
+            "22285168",
+            "24868098",
+            "26768165"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A",
+            "B"
+          ],
+          "evidence_count": 4,
+          "avg_rating": 3.75,
+          "max_rating": 5
+        },
+        {
+          "variant_name": "EGFR Exon 19 Deletion",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Afatinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "23982599",
+            "25862853",
+            "26515464"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A",
+            "D"
+          ],
+          "evidence_count": 3,
+          "avg_rating": 3,
+          "max_rating": 5
+        },
+        {
+          "variant_name": "EGFR L858R",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Afatinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "18408761",
+            "23982599",
+            "26515464"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A",
+            "D"
+          ],
+          "evidence_count": 3,
+          "avg_rating": 3,
+          "max_rating": 5
+        },
+        {
+          "variant_name": "EGFR L858R OR EGFR Exon 19 Deletion",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Gefitinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "21531810",
+            "24263064",
+            "24755888"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A",
+            "B",
+            "C"
+          ],
+          "evidence_count": 3,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "EGFR T790M",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Erlotinib",
+          "effect": "resistance",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "15737014",
+            "25668228",
+            "27304188"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A",
+            "B",
+            "C"
+          ],
+          "evidence_count": 3,
+          "avg_rating": 4,
+          "max_rating": 5
+        },
+        {
+          "variant_name": "EGFR Exon 20 Insertion",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Amivantamab",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "34339292",
+            "37870976"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 2,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "EGFR L858R OR EGFR Exon 19 Deletion",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Amivantamab",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "37879444",
+            "38942080"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 2,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "EGFR L858R OR EGFR Exon 19 Deletion",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Dacomitinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "28958502"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 2,
+          "avg_rating": 4.5,
+          "max_rating": 5
+        },
+        {
+          "variant_name": "EGFR L858R OR EGFR Exon 19 Deletion",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Erlotinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "21531810",
+            "31591063"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A",
+            "B"
+          ],
+          "evidence_count": 2,
+          "avg_rating": 4.5,
+          "max_rating": 5
+        },
+        {
+          "variant_name": "EGFR L858R OR EGFR Exon 19 Deletion",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Osimertinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "32955177",
+            "37937763"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 2,
+          "avg_rating": 5,
+          "max_rating": 5
+        },
+        {
+          "variant_name": "ERBB2 Exon 20 Insertion",
+          "gene_symbol": "ERBB2",
+          "therapy_name": "Trastuzumab Deruxtecan",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "34534430",
+            "37694347"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A",
+            "B"
+          ],
+          "evidence_count": 2,
+          "avg_rating": 4.5,
+          "max_rating": 5
+        },
+        {
+          "variant_name": "BRAF V600E",
+          "gene_symbol": "BRAF",
+          "therapy_name": "Dabrafenib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "27283860"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "BRAF V600E",
+          "gene_symbol": "BRAF",
+          "therapy_name": "Trametinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "27283860"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "EGFR Exon 20 Insertion",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Chemotherapy",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "37870976"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "EGFR Exon 20 Insertion",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Mobocertinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "34647988"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "EGFR L858R OR EGFR Exon 19 Deletion",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Carboplatin",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "37879444"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "EGFR L858R OR EGFR Exon 19 Deletion",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Chemotherapy",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "37937763"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 5,
+          "max_rating": 5
+        },
+        {
+          "variant_name": "EGFR L858R OR EGFR Exon 19 Deletion",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Lazertinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "38942080"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "EGFR L858R OR EGFR Exon 19 Deletion",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Pemetrexed",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "37879444"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "EGFR L858R OR EGFR Exon 19 Deletion",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Ramucirumab",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "31591063"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 5,
+          "max_rating": 5
+        },
+        {
+          "variant_name": "EGFR Mutation",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Datopotamab Deruxtecan",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "39250535"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "EGFR Mutation",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Datopotamab Deruxtecan Regimen",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "39761483"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "EGFR S768I OR EGFR G719A OR EGFR L861Q",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Afatinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "22452895"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "ERBB2 A775_G776insTVMA",
+          "gene_symbol": "ERBB2",
+          "therapy_name": "Trastuzumab Deruxtecan",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "37694347"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "ERBB2 A775_G776insV",
+          "gene_symbol": "ERBB2",
+          "therapy_name": "Trastuzumab Deruxtecan",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "37694347"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "ERBB2 A775_G776insVVMA",
+          "gene_symbol": "ERBB2",
+          "therapy_name": "Trastuzumab Deruxtecan",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "37694347"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "ERBB2 A775_G776insYVMA",
+          "gene_symbol": "ERBB2",
+          "therapy_name": "Zongertinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "40293180"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "ERBB2 G776_V777delinsVCD",
+          "gene_symbol": "ERBB2",
+          "therapy_name": "Trastuzumab Deruxtecan",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "37694347"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "ERBB2 G776delinsLC",
+          "gene_symbol": "ERBB2",
+          "therapy_name": "Trastuzumab Deruxtecan",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "37694347"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "ERBB2 G776delinsVC",
+          "gene_symbol": "ERBB2",
+          "therapy_name": "Trastuzumab Deruxtecan",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "37694347"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "ERBB2 G778_P780dup",
+          "gene_symbol": "ERBB2",
+          "therapy_name": "Trastuzumab Deruxtecan",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "37694347"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "ERBB2 G778_S779insLPS",
+          "gene_symbol": "ERBB2",
+          "therapy_name": "Trastuzumab Deruxtecan",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "37694347"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "ERBB2 L755A",
+          "gene_symbol": "ERBB2",
+          "therapy_name": "Trastuzumab Deruxtecan",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "37694347"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "ERBB2 L755M",
+          "gene_symbol": "ERBB2",
+          "therapy_name": "Trastuzumab Deruxtecan",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "37694347"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "ERBB2 L755P",
+          "gene_symbol": "ERBB2",
+          "therapy_name": "Trastuzumab Deruxtecan",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "37694347"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "ERBB2 L755P OR ERBB2 G776V OR ERBB2 G776delinsVC OR ERBB2 P780_Y781insGSP",
+          "gene_symbol": "ERBB2",
+          "therapy_name": "Zongertinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "40293180"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "ERBB2 Mutation",
+          "gene_symbol": "ERBB2",
+          "therapy_name": "Trastuzumab Deruxtecan",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "37694347"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "ERBB2 Mutation",
+          "gene_symbol": "ERBB2",
+          "therapy_name": "Zongertinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "40293180"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "ERBB2 S310F",
+          "gene_symbol": "ERBB2",
+          "therapy_name": "Trastuzumab Deruxtecan",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "37694347"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "ERBB2 Y772_A775DUP",
+          "gene_symbol": "ERBB2",
+          "therapy_name": "Trastuzumab Deruxtecan",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "37694347"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "KRAS G12C",
+          "gene_symbol": "KRAS",
+          "therapy_name": "Sotorasib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "34096690"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 5,
+          "max_rating": 5
+        },
+        {
+          "variant_name": "KRAS Mutation",
+          "gene_symbol": "KRAS",
+          "therapy_name": "Docetaxel",
+          "effect": "resistance",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "28492898"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 5,
+          "max_rating": 5
+        },
+        {
+          "variant_name": "KRAS Mutation",
+          "gene_symbol": "KRAS",
+          "therapy_name": "Selumetinib",
+          "effect": "resistance",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "28492898"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 5,
+          "max_rating": 5
+        },
+        {
+          "variant_name": "MET Exon 14 Skipping Mutation",
+          "gene_symbol": "MET",
+          "therapy_name": "Capmatinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "32877583"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "CD274 Expression",
+          "gene_symbol": "CD274",
+          "therapy_name": "Pembrolizumab",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "25891174",
+            "26086854",
+            "26918451",
+            "27718847",
+            "28472902"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 5,
+          "avg_rating": 3.6,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "EGFR L858R",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Gefitinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "15118125",
+            "18509184",
+            "20038723",
+            "24457318",
+            "24736073"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B",
+            "D"
+          ],
+          "evidence_count": 5,
+          "avg_rating": 3.6,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "EGFR Mutation",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Gefitinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "15329413",
+            "19692680",
+            "20022809",
+            "20038723",
+            "21258250"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 5,
+          "avg_rating": 4,
+          "max_rating": 5
+        },
+        {
+          "variant_name": "EGFR Mutation",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Erlotinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "15329413",
+            "21258250",
+            "21783417",
+            "21969500"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B",
+            "C"
+          ],
+          "evidence_count": 4,
+          "avg_rating": 3.75,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "EGFR T790M",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Gefitinib",
+          "effect": "resistance",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "15728811",
+            "15737014",
+            "17020982",
+            "27304188"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B",
+            "C"
+          ],
+          "evidence_count": 4,
+          "avg_rating": 3.25,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "KRAS Mutation",
+          "gene_symbol": "KRAS",
+          "therapy_name": "Docetaxel",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "20038723",
+            "23200175",
+            "26209642",
+            "27876675"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 4,
+          "avg_rating": 3.75,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "KRAS Mutation",
+          "gene_symbol": "KRAS",
+          "therapy_name": "Trametinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "22805291",
+            "24685132",
+            "25722381",
+            "27876675"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B",
+            "D"
+          ],
+          "evidence_count": 4,
+          "avg_rating": 2.75,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "RRM1 Underexpression",
+          "gene_symbol": "RRM1",
+          "therapy_name": "Gemcitabine",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "19884554",
+            "23038758",
+            "24595080",
+            "24647522"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 4,
+          "avg_rating": 3.5,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "CD274 Expression",
+          "gene_symbol": "CD274",
+          "therapy_name": "Atezolizumab",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "26918451",
+            "26970723",
+            "28472902"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 3,
+          "avg_rating": 3.67,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "CD274 Expression",
+          "gene_symbol": "CD274",
+          "therapy_name": "Nivolumab",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "26086854",
+            "26918451",
+            "28472902"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 3,
+          "avg_rating": 3.67,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "EGFR Amplification",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Erlotinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "20826716",
+            "26722081",
+            "27664271"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 3,
+          "avg_rating": 3.33,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "EGFR Amplification",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Gefitinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "20826716",
+            "26722081",
+            "27664271"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 3,
+          "avg_rating": 3.33,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "EGFR Exon 19 Deletion",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Gefitinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "16730237",
+            "16818686",
+            "18509184"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B",
+            "D"
+          ],
+          "evidence_count": 3,
+          "avg_rating": 3.67,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "EGFR T790M",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Rociletinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "24065731",
+            "25923550",
+            "26515464"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B",
+            "D"
+          ],
+          "evidence_count": 3,
+          "avg_rating": 3,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "KRAS Mutation",
+          "gene_symbol": "KRAS",
+          "therapy_name": "Erlotinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "22025157",
+            "26209642",
+            "26802155"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 3,
+          "avg_rating": 3.33,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "KRAS Mutation",
+          "gene_symbol": "KRAS",
+          "therapy_name": "Erlotinib",
+          "effect": "resistance",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "21258250",
+            "21969500",
+            "22025157"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 3,
+          "avg_rating": 2.67,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KRAS Mutation",
+          "gene_symbol": "KRAS",
+          "therapy_name": "Selumetinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "23200175",
+            "25199829",
+            "26802155"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B",
+            "D"
+          ],
+          "evidence_count": 3,
+          "avg_rating": 3.33,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "AREG Expression",
+          "gene_symbol": "AREG",
+          "therapy_name": "Crizotinib",
+          "effect": "resistance",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "21791641",
+            "23344087"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B",
+            "D"
+          ],
+          "evidence_count": 2,
+          "avg_rating": 2.5,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "CD274 Expression",
+          "gene_symbol": "CD274",
+          "therapy_name": "Avelumab",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "26918451",
+            "28472902"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 2,
+          "avg_rating": 3.5,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "EGFR G719S",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Erlotinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "19147750",
+            "26124334"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B",
+            "D"
+          ],
+          "evidence_count": 2,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "EGFR G719S",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Gefitinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "15118125",
+            "26124334"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B",
+            "D"
+          ],
+          "evidence_count": 2,
+          "avg_rating": 3.5,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "EGFR L858R",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Dacomitinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "18089823",
+            "26768165"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B",
+            "D"
+          ],
+          "evidence_count": 2,
+          "avg_rating": 4,
+          "max_rating": 5
+        },
+        {
+          "variant_name": "EGFR Mutation",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Afatinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "22452896",
+            "27083334"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 2,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "EGFR Overexpression",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Epidermal Growth Factor Receptor Tyrosine Kinase Inhibitor",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "22056021",
+            "26439803"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 2,
+          "avg_rating": 3.5,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "EGFR Rare Exon 18-21 Mutation",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Erlotinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "21531810"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 2,
+          "avg_rating": 3,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "EGFR Rare Exon 18-21 Mutation",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Gefitinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "21531810"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 2,
+          "avg_rating": 3,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "ERBB2 Amplification",
+          "gene_symbol": "ERBB2",
+          "therapy_name": "Trastuzumab",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "14679114",
+            "14967075"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 2,
+          "avg_rating": 2.5,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "MET Exon 14 Skipping Mutation",
+          "gene_symbol": "MET",
+          "therapy_name": "Crizotinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "123413",
+            "26892698"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B",
+            "C"
+          ],
+          "evidence_count": 2,
+          "avg_rating": 1.5,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "TYMS Overexpression",
+          "gene_symbol": "TYMS",
+          "therapy_name": "Pemetrexed",
+          "effect": "resistance",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "23060591",
+            "26502926"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 2,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "ABCB1 I1145I",
+          "gene_symbol": "ABCB1",
+          "therapy_name": "Carboplatin",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "22296372"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "ABCB1 I1145I",
+          "gene_symbol": "ABCB1",
+          "therapy_name": "Cisplatin",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "22296372"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "ALK Mutation",
+          "gene_symbol": "ALK",
+          "therapy_name": "Ceritinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "24670165"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "AURKA Overexpression",
+          "gene_symbol": "AURKA",
+          "therapy_name": "Cisplatin",
+          "effect": "resistance",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "25082261"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "BCL2L11 Deletion Polymorphism",
+          "gene_symbol": "BCL2L11",
+          "therapy_name": "Epidermal Growth Factor Receptor Tyrosine Kinase Inhibitor",
+          "effect": "resistance",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "22426421"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "BIRC5 NUCLEAR EXPRESSION",
+          "gene_symbol": "BIRC5",
+          "therapy_name": "Platinum Compound",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "24961465"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "BIRC5 NUCLEAR EXPRESSION",
+          "gene_symbol": "BIRC5",
+          "therapy_name": "Taxane Compound",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "24961465"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "BRAF V600",
+          "gene_symbol": "BRAF",
+          "therapy_name": "Vemurafenib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "26287849"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "BRAF V600E",
+          "gene_symbol": "BRAF",
+          "therapy_name": "Vemurafenib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "29320312"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "CD274 Expression",
+          "gene_symbol": "CD274",
+          "therapy_name": "Durvalumab",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "28472902"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "CDKN2A Loss",
+          "gene_symbol": "CDKN2A",
+          "therapy_name": "Palbociclib",
+          "effect": "resistance",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "174591"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "EGFR Amplification",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Epidermal Growth Factor Receptor Tyrosine Kinase Inhibitor",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "20826716"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "EGFR C797S",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Osimertinib",
+          "effect": "resistance",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "25939061"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "EGFR Exon 18 Overexpression",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Bevacizumab",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "24039832"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "EGFR Exon 18 Overexpression",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Erlotinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "24039832"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "EGFR Exon 19 Deletion",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Anti-PD-L1 Monoclonal Antibody",
+          "effect": "resistance",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "31086949"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "EGFR Exon 19 Deletion",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Anti-PD1 Monoclonal Antibody",
+          "effect": "resistance",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "31086949"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "EGFR Exon 19 Deletion",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Dacomitinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "26768165"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "EGFR Exon 20 Insertion",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Osimertinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "31208370"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "EGFR Expression",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Gefitinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "12748244"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "EGFR G719",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Erlotinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "21531810"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "EGFR G719",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Gefitinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "21531810"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "EGFR Gain-of-function",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Gefitinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "15118073"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "EGFR L861",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Erlotinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "21531810"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "EGFR L861",
+          "gene_symbol": "EGFR",
+          "therapy_name": "Gefitinib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "21531810"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        }
+      ],
+      "updatedAt": "2025-11-23T08:53:35.510Z"
+    }
   },
   {
     "id": "therapies_target_braf_map2k1_map2k2",
@@ -1182,14 +3066,1629 @@
   {
     "id": "kit_variants_drug_response_gist",
     "tab": "biomarkers_resistance",
-    "question": "List variants of KIT that affect drug response in GIST.",
-    "cachedResponse": null
+    "question": "List variants of KIT that affect drug response in Gastrointestinal Stromal Tumor.",
+    "cachedResponse": {
+      "answer": "Several **KIT** variants affect drug response in **Gastrointestinal Stromal Tumor**. The most robust evidence (Level A) indicates **KIT Exon 11 Mutation** confers sensitivity to **Imatinib** [PMID:14645423, 18955451].\n\n**KIT** Variants Affecting Drug Response in **Gastrointestinal Stromal Tumor**:\n\n*   **KIT Exon 11 Mutation** (Level A, 2 items): Sensitivity to **Imatinib** [PMID:14645423, 18955451].\n*   **KIT Exon 9 Mutation** (Level A, 3 items): Sensitivity to **Imatinib** [PMID:14645423, 16624552, 18955451].\n*   **KIT Exon 11 Mutation** (Level B, 3 items): Sensitivity to **Regorafenib Anhydrous** [PMID:22614970, 23177515, 27371698].\n*   **KIT Exon 9 Mutation** (Level B, 3 items): Sensitivity to **Regorafenib Anhydrous** [PMID:22614970, 23177515, 27371698].\n*   **KIT Exon 9 Mutation** (Level B, 2 items): Sensitivity to **Sunitinib** [PMID:18955458, 22439647].\n*   **KIT Exon 11 Mutation** (Level B, 1 item): Resistance to **Sunitinib** [PMID:18955458].\n*   **KIT V654A** (Level B, 1 item): Sensitivity to **Sunitinib** [PMID:16638875].\n*   **KIT Wildtype** (Level B, 1 item): Sensitivity to **Regorafenib Anhydrous** [PMID:27371698].\n*   **KIT EXPRESSION** (Level B, 1 item): Sensitivity to **Imatinib** [PMID:18955451].\n\n**KIT** Variants with Lower Confidence Evidence (Level C/D):\n\n*   **KIT N822K** (Level C, 2 items): Resistance to **Imatinib** [PMID:16954519, 25239608].\n*   **KIT T670I** (Level C, 2 items): Resistance to **Imatinib** [PMID:16954519, 25239608].\n*   **KIT V559D** (Level C, 2 items): Sensitivity to **Imatinib** [PMID:22114577, 25239608].\n*   **KIT C809G** (Level C, 1 item): Resistance to **Imatinib** [PMID:16954519].\n*   **KIT D579del** (Level C, 1 item): Resistance to **Sunitinib** [PMID:18955458].\n*   **KIT D816H** (Level C, 1 item): Resistance to **Imatinib** [PMID:16954519].\n*   **KIT D820A** (Level C, 1 item): Resistance to **Imatinib** [PMID:16954519].\n*   **KIT D820G** (Level C, 1 item): Resistance to **Imatinib** [PMID:16954519].\n*   **KIT D820Y** (Level C, 1 item): Sensitivity to **Regorafenib Anhydrous** [PMID:22614970].\n*   **KIT Exon 13 Mutation** (Level C, 1 item): Sensitivity to **Imatinib** [PMID:14645423].\n*   **KIT F506_F508DUP** (Level C, 1 item): Sensitivity to **Imatinib** [PMID:18955451].\n*   **KIT K484_G487DEL** (Level C, 1 item): Sensitivity to **Imatinib** [PMID:18955451].\n*   **KIT K550_K558del** (Level C, 1 item): Resistance to **Sunitinib** [PMID:18955458].\n*   **KIT K550_K559DEL** (Level C, 1 item): Resistance to **Sunitinib** [PMID:18955458].\n*   **KIT K558_V559del** (Level C, 1 item): Resistance to **Sunitinib** [PMID:18955458].\n*   **KIT L576P** (Level C, 1 item): Resistance to **Sunitinib** [PMID:18955458].\n*   **KIT N822K** (Level C, 1 item): Sensitivity to **Regorafenib Anhydrous** [PMID:22614970].\n*   **KIT T417_D419delinsY** (Level C, 1 item): Sensitivity to **Imatinib** [PMID:18955451].\n*   **KIT V555_V559DEL** (Level C, 1 item): Resistance to **Sunitinib** [PMID:18955458].\n*   **KIT V560D** (Level C, 1 item): Resistance to **Sunitinib** [PMID:18955458].\n*   **KIT W557_K558del** (Level C, 1 item): Resistance to **Sunitinib** [PMID:18955458].\n*   **KIT Y823D** (Level C, 1 item): Resistance to **Imatinib** [PMID:16954519].\n*   **KIT A502_Y503insAY** (Level D, 1 item): Sensitivity to **Imatinib**, **Ponatinib**, **Regorafenib Anhydrous**, **Sunitinib** [PMID:25239608].\n*   **KIT A829P AND ( KIT W557_K558del OR KIT V560_Y578del )** (Level D, 1 item): Resistance to **Imatinib**, **Sunitinib** [PMID:25239608].\n*   **KIT D816E** (Level D, 3 items): Resistance to **Imatinib**, **Ponatinib**, **Sunitinib** [PMID:25239608].\n*   **KIT K550_W557del** (Level D, 4 items): Sensitivity to **Imatinib**, **Ponatinib**, **Regorafenib Anhydrous**, **Sunitinib** [PMID:25239608].\n*   **KIT K558delinsNP** (Level D, 4 items): Sensitivity to **Imatinib**, **Ponatinib**, **Regorafenib Anhydrous**, **Sunitinib** [PMID:25239608].\n*   **KIT K642E** (Level D, 2 items): Sensitivity to **Ponatinib**, **Sunitinib** [PMID:25239608].\n*   **KIT Mutation** (Level D, 2 items): Sensitivity to **Imatinib**, **Pictilisib** [PMID:23231951].\n*   **KIT N822K** (Level D, 4 items): Resistance to **Ponatinib**, **Regorafenib Anhydrous**, **Sunitinib** [PMID:25239608].\n*   **KIT P551_E554delPMYE** (Level D, 4 items): Sensitivity to **Imatinib**, **Ponatinib**, **Regorafenib Anhydrous**, **Sunitinib** [PMID:25239608].\n*   **KIT T670I** (Level D, 3 items): Resistance to **Ponatinib**, **Regorafenib Anhydrous**, **Sunitinib** [PMID:25239608].\n*   **KIT V559D** (Level D, 2 items): Sensitivity to **Ponatinib**, **Regorafenib Anhydrous** [PMID:25239608].\n*   **KIT V560D** (Level D, 4 items): Sensitivity to **Imatinib**, **Ponatinib**, **Regorafenib Anhydrous**, **Sunitinib** [PMID:25239608].\n*   **KIT V560G** (Level D, 3 items): Sensitivity to **Imatinib**, **Ponatinib**, **Regorafenib Anhydrous** [PMID:25239608].\n*   **KIT V560_L576DEL** (Level D, 3 items): Sensitivity to **Imatinib**, **Ponatinib**, **Regorafenib Anhydrous** [PMID:25239608].\n*   **KIT V654A** (Level D, 1 item): Resistance to **Imatinib** [PMID:16954519].\n*   **KIT W557_K558del** (Level D, 4 items): Sensitivity to **Imatinib**, **Ponatinib**, **Regorafenib Anhydrous**, **Sunitinib** [PMID:25239608].",
+      "cypher": "MATCH (b:Biomarker)-[rel:AFFECTS_RESPONSE_TO]->(t:Therapy)\nMATCH (b)-[:VARIANT_OF]->(g:Gene)\nWHERE b:Variant\n  AND (toLower(g.symbol) = toLower('KIT')\n       OR any(s IN coalesce(g.synonyms, []) WHERE toLower(s) = toLower('KIT')))\n  AND toLower(rel.disease_name) CONTAINS toLower('gastrointestinal')\n  AND toLower(rel.disease_name) CONTAINS toLower('stromal')\n  AND toLower(rel.disease_name) CONTAINS toLower('tumor')\nRETURN\n  b.name AS variant_name,\n  g.symbol AS gene_symbol,\n  t.name AS therapy_name,\n  rel.effect AS effect,\n  rel.disease_name AS disease_name,\n  coalesce(rel.pmids, []) AS pmids,\n  coalesce(rel.best_evidence_level, '') AS best_evidence_level,\n  coalesce(rel.evidence_levels, []) AS evidence_levels,\n  coalesce(rel.evidence_count, 0) AS evidence_count,\n  rel.avg_rating AS avg_rating,\n  rel.max_rating AS max_rating\nORDER BY best_evidence_level ASC, evidence_count DESC\nLIMIT 100",
+      "rows": [
+        {
+          "variant_name": "KIT Exon 9 Mutation",
+          "gene_symbol": "KIT",
+          "therapy_name": "Imatinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "14645423",
+            "16624552",
+            "18955451"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A",
+            "B"
+          ],
+          "evidence_count": 3,
+          "avg_rating": 3,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "KIT Exon 11 Mutation",
+          "gene_symbol": "KIT",
+          "therapy_name": "Imatinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "14645423",
+            "18955451"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A",
+            "B"
+          ],
+          "evidence_count": 2,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "KIT Exon 11 Mutation",
+          "gene_symbol": "KIT",
+          "therapy_name": "Regorafenib Anhydrous",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "22614970",
+            "23177515",
+            "27371698"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 3,
+          "avg_rating": 2.33,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT Exon 9 Mutation",
+          "gene_symbol": "KIT",
+          "therapy_name": "Regorafenib Anhydrous",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "22614970",
+            "23177515",
+            "27371698"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B",
+            "C"
+          ],
+          "evidence_count": 3,
+          "avg_rating": 2.33,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT Exon 9 Mutation",
+          "gene_symbol": "KIT",
+          "therapy_name": "Sunitinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "18955458",
+            "22439647"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 2,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT EXPRESSION",
+          "gene_symbol": "KIT",
+          "therapy_name": "Imatinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "18955451"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "KIT Exon 11 Mutation",
+          "gene_symbol": "KIT",
+          "therapy_name": "Sunitinib",
+          "effect": "resistance",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "18955458"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT V654A",
+          "gene_symbol": "KIT",
+          "therapy_name": "Sunitinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "16638875"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT Wildtype",
+          "gene_symbol": "KIT",
+          "therapy_name": "Regorafenib Anhydrous",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "27371698"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "KIT N822K",
+          "gene_symbol": "KIT",
+          "therapy_name": "Imatinib",
+          "effect": "resistance",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "16954519",
+            "25239608"
+          ],
+          "best_evidence_level": "C",
+          "evidence_levels": [
+            "C",
+            "D"
+          ],
+          "evidence_count": 2,
+          "avg_rating": 3.5,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "KIT T670I",
+          "gene_symbol": "KIT",
+          "therapy_name": "Imatinib",
+          "effect": "resistance",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "16954519",
+            "25239608"
+          ],
+          "best_evidence_level": "C",
+          "evidence_levels": [
+            "C",
+            "D"
+          ],
+          "evidence_count": 2,
+          "avg_rating": 4,
+          "max_rating": 5
+        },
+        {
+          "variant_name": "KIT V559D",
+          "gene_symbol": "KIT",
+          "therapy_name": "Imatinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "22114577",
+            "25239608"
+          ],
+          "best_evidence_level": "C",
+          "evidence_levels": [
+            "C",
+            "D"
+          ],
+          "evidence_count": 2,
+          "avg_rating": 2.5,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT C809G",
+          "gene_symbol": "KIT",
+          "therapy_name": "Imatinib",
+          "effect": "resistance",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "16954519"
+          ],
+          "best_evidence_level": "C",
+          "evidence_levels": [
+            "C"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT D579del",
+          "gene_symbol": "KIT",
+          "therapy_name": "Sunitinib",
+          "effect": "resistance",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "18955458"
+          ],
+          "best_evidence_level": "C",
+          "evidence_levels": [
+            "C"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "KIT D816H",
+          "gene_symbol": "KIT",
+          "therapy_name": "Imatinib",
+          "effect": "resistance",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "16954519"
+          ],
+          "best_evidence_level": "C",
+          "evidence_levels": [
+            "C"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT D820A",
+          "gene_symbol": "KIT",
+          "therapy_name": "Imatinib",
+          "effect": "resistance",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "16954519"
+          ],
+          "best_evidence_level": "C",
+          "evidence_levels": [
+            "C"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT D820G",
+          "gene_symbol": "KIT",
+          "therapy_name": "Imatinib",
+          "effect": "resistance",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "16954519"
+          ],
+          "best_evidence_level": "C",
+          "evidence_levels": [
+            "C"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT D820Y",
+          "gene_symbol": "KIT",
+          "therapy_name": "Regorafenib Anhydrous",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "22614970"
+          ],
+          "best_evidence_level": "C",
+          "evidence_levels": [
+            "C"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "KIT Exon 13 Mutation",
+          "gene_symbol": "KIT",
+          "therapy_name": "Imatinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "14645423"
+          ],
+          "best_evidence_level": "C",
+          "evidence_levels": [
+            "C"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "KIT F506_F508DUP",
+          "gene_symbol": "KIT",
+          "therapy_name": "Imatinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "18955451"
+          ],
+          "best_evidence_level": "C",
+          "evidence_levels": [
+            "C"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 1,
+          "max_rating": 1
+        },
+        {
+          "variant_name": "KIT K484_G487DEL",
+          "gene_symbol": "KIT",
+          "therapy_name": "Imatinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "18955451"
+          ],
+          "best_evidence_level": "C",
+          "evidence_levels": [
+            "C"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 1,
+          "max_rating": 1
+        },
+        {
+          "variant_name": "KIT K550_K558del",
+          "gene_symbol": "KIT",
+          "therapy_name": "Sunitinib",
+          "effect": "resistance",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "18955458"
+          ],
+          "best_evidence_level": "C",
+          "evidence_levels": [
+            "C"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "KIT K550_K559DEL",
+          "gene_symbol": "KIT",
+          "therapy_name": "Sunitinib",
+          "effect": "resistance",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "18955458"
+          ],
+          "best_evidence_level": "C",
+          "evidence_levels": [
+            "C"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "KIT K558_V559del",
+          "gene_symbol": "KIT",
+          "therapy_name": "Sunitinib",
+          "effect": "resistance",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "18955458"
+          ],
+          "best_evidence_level": "C",
+          "evidence_levels": [
+            "C"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "KIT L576P",
+          "gene_symbol": "KIT",
+          "therapy_name": "Sunitinib",
+          "effect": "resistance",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "18955458"
+          ],
+          "best_evidence_level": "C",
+          "evidence_levels": [
+            "C"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "KIT N822K",
+          "gene_symbol": "KIT",
+          "therapy_name": "Regorafenib Anhydrous",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "22614970"
+          ],
+          "best_evidence_level": "C",
+          "evidence_levels": [
+            "C"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "KIT T417_D419delinsY",
+          "gene_symbol": "KIT",
+          "therapy_name": "Imatinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "18955451"
+          ],
+          "best_evidence_level": "C",
+          "evidence_levels": [
+            "C"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "KIT V555_V559DEL",
+          "gene_symbol": "KIT",
+          "therapy_name": "Sunitinib",
+          "effect": "resistance",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "18955458"
+          ],
+          "best_evidence_level": "C",
+          "evidence_levels": [
+            "C"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "KIT V560D",
+          "gene_symbol": "KIT",
+          "therapy_name": "Sunitinib",
+          "effect": "resistance",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "18955458"
+          ],
+          "best_evidence_level": "C",
+          "evidence_levels": [
+            "C"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT W557_K558del",
+          "gene_symbol": "KIT",
+          "therapy_name": "Sunitinib",
+          "effect": "resistance",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "18955458"
+          ],
+          "best_evidence_level": "C",
+          "evidence_levels": [
+            "C"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT Y823D",
+          "gene_symbol": "KIT",
+          "therapy_name": "Imatinib",
+          "effect": "resistance",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "16954519"
+          ],
+          "best_evidence_level": "C",
+          "evidence_levels": [
+            "C"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT A502_Y503insAY",
+          "gene_symbol": "KIT",
+          "therapy_name": "Imatinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT A502_Y503insAY",
+          "gene_symbol": "KIT",
+          "therapy_name": "Ponatinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT A502_Y503insAY",
+          "gene_symbol": "KIT",
+          "therapy_name": "Regorafenib Anhydrous",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT A502_Y503insAY",
+          "gene_symbol": "KIT",
+          "therapy_name": "Sunitinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "KIT A829P",
+          "gene_symbol": "KIT",
+          "therapy_name": "Ponatinib",
+          "effect": "resistance",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "KIT A829P AND ( KIT W557_K558del OR KIT V560_Y578del )",
+          "gene_symbol": "KIT",
+          "therapy_name": "Imatinib",
+          "effect": "resistance",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "KIT A829P AND ( KIT W557_K558del OR KIT V560_Y578del )",
+          "gene_symbol": "KIT",
+          "therapy_name": "Sunitinib",
+          "effect": "resistance",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "KIT D816E",
+          "gene_symbol": "KIT",
+          "therapy_name": "Imatinib",
+          "effect": "resistance",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "KIT D816E",
+          "gene_symbol": "KIT",
+          "therapy_name": "Ponatinib",
+          "effect": "resistance",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "KIT D816E",
+          "gene_symbol": "KIT",
+          "therapy_name": "Sunitinib",
+          "effect": "resistance",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "KIT K550_W557del",
+          "gene_symbol": "KIT",
+          "therapy_name": "Imatinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "KIT K550_W557del",
+          "gene_symbol": "KIT",
+          "therapy_name": "Ponatinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "KIT K550_W557del",
+          "gene_symbol": "KIT",
+          "therapy_name": "Regorafenib Anhydrous",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "KIT K550_W557del",
+          "gene_symbol": "KIT",
+          "therapy_name": "Sunitinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "KIT K558delinsNP",
+          "gene_symbol": "KIT",
+          "therapy_name": "Imatinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT K558delinsNP",
+          "gene_symbol": "KIT",
+          "therapy_name": "Ponatinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT K558delinsNP",
+          "gene_symbol": "KIT",
+          "therapy_name": "Regorafenib Anhydrous",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT K558delinsNP",
+          "gene_symbol": "KIT",
+          "therapy_name": "Sunitinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT K642E",
+          "gene_symbol": "KIT",
+          "therapy_name": "Ponatinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT K642E",
+          "gene_symbol": "KIT",
+          "therapy_name": "Sunitinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT Mutation",
+          "gene_symbol": "KIT",
+          "therapy_name": "Imatinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "23231951"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "KIT Mutation",
+          "gene_symbol": "KIT",
+          "therapy_name": "Pictilisib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "23231951"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "KIT N822K",
+          "gene_symbol": "KIT",
+          "therapy_name": "Ponatinib",
+          "effect": "resistance",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT N822K",
+          "gene_symbol": "KIT",
+          "therapy_name": "Regorafenib Anhydrous",
+          "effect": "resistance",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT N822K",
+          "gene_symbol": "KIT",
+          "therapy_name": "Sunitinib",
+          "effect": "resistance",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "KIT P551_E554delPMYE",
+          "gene_symbol": "KIT",
+          "therapy_name": "Imatinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT P551_E554delPMYE",
+          "gene_symbol": "KIT",
+          "therapy_name": "Ponatinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT P551_E554delPMYE",
+          "gene_symbol": "KIT",
+          "therapy_name": "Regorafenib Anhydrous",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT P551_E554delPMYE",
+          "gene_symbol": "KIT",
+          "therapy_name": "Sunitinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT T670I",
+          "gene_symbol": "KIT",
+          "therapy_name": "Ponatinib",
+          "effect": "resistance",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 5,
+          "max_rating": 5
+        },
+        {
+          "variant_name": "KIT T670I",
+          "gene_symbol": "KIT",
+          "therapy_name": "Regorafenib Anhydrous",
+          "effect": "resistance",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "KIT T670I",
+          "gene_symbol": "KIT",
+          "therapy_name": "Sunitinib",
+          "effect": "resistance",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 5,
+          "max_rating": 5
+        },
+        {
+          "variant_name": "KIT V559D",
+          "gene_symbol": "KIT",
+          "therapy_name": "Ponatinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "KIT V559D",
+          "gene_symbol": "KIT",
+          "therapy_name": "Regorafenib Anhydrous",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "KIT V560D",
+          "gene_symbol": "KIT",
+          "therapy_name": "Imatinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT V560D",
+          "gene_symbol": "KIT",
+          "therapy_name": "Ponatinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT V560D",
+          "gene_symbol": "KIT",
+          "therapy_name": "Regorafenib Anhydrous",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT V560D",
+          "gene_symbol": "KIT",
+          "therapy_name": "Sunitinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT V560G",
+          "gene_symbol": "KIT",
+          "therapy_name": "Imatinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT V560G",
+          "gene_symbol": "KIT",
+          "therapy_name": "Ponatinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT V560G",
+          "gene_symbol": "KIT",
+          "therapy_name": "Regorafenib Anhydrous",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT V560_L576DEL",
+          "gene_symbol": "KIT",
+          "therapy_name": "Imatinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "KIT V560_L576DEL",
+          "gene_symbol": "KIT",
+          "therapy_name": "Ponatinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "KIT V560_L576DEL",
+          "gene_symbol": "KIT",
+          "therapy_name": "Regorafenib Anhydrous",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "KIT V654A",
+          "gene_symbol": "KIT",
+          "therapy_name": "Imatinib",
+          "effect": "resistance",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "16954519"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT W557_K558del",
+          "gene_symbol": "KIT",
+          "therapy_name": "Imatinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT W557_K558del",
+          "gene_symbol": "KIT",
+          "therapy_name": "Ponatinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "KIT W557_K558del",
+          "gene_symbol": "KIT",
+          "therapy_name": "Regorafenib Anhydrous",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        },
+        {
+          "variant_name": "KIT W557_K558del",
+          "gene_symbol": "KIT",
+          "therapy_name": "Sunitinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608"
+          ],
+          "best_evidence_level": "D",
+          "evidence_levels": [
+            "D"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 2,
+          "max_rating": 2
+        }
+      ],
+      "updatedAt": "2025-11-23T08:56:55.397Z"
+    }
   },
   {
     "id": "braf_v600e_dabrafenib_evidence",
     "tab": "evidence_precision",
     "question": "Provide PMIDs and evidence levels supporting that BRAF V600E confers sensitivity to dabrafenib.",
-    "cachedResponse": null
+    "cachedResponse": {
+      "answer": "**BRAF V600E** confers sensitivity to **Dabrafenib** across various cancer types, with the strongest evidence (Level A) observed in **Lung Non-small Cell Carcinoma**, **Solid Tumor**, and **Low Grade Glioma**.\n\n*   **BRAF V600E** (Level A, 3 items): Sensitivity to **Dabrafenib** in **Lung Non-small Cell Carcinoma**, **Solid Tumor**, and **Low Grade Glioma**. [PMID: 27283860, PMID: 37059834, PMID: 36375115]\n*   **BRAF V600E** (Level B, 8 items): Sensitivity to **Dabrafenib** in **Melanoma**, **Colorectal Cancer**, **Biliary Tract Cancer**, **Cancer**, **Skin Melanoma**, and **Anaplastic Thyroid Carcinoma**. [PMID: 23020132, PMID: 24583796, PMID: 25265492, PMID: 28891408, PMID: 22608338, PMID: 29431699, PMID: 169315, PMID: 32758030, PMID: 25399551, PMID: 29072975]\n*   **BRAF V600E** (Level C, 3 items): Sensitivity to **Dabrafenib** in **Intrahepatic Cholangiocarcinoma**, **Gastrointestinal Neuroendocrine Tumor**, and **Cholangiocarcinoma**. [PMID: 25435907, PMID: 28078132, PMID: 27048246, PMID: 28480077]\n*   **BRAF V600E AND BRAF V600M** (Level C, 1 item): Sensitivity to **Dabrafenib** in **Melanoma**. [PMID: 23031422]",
+      "cypher": "MATCH (v:Variant)-[:VARIANT_OF]->(g:Gene)\nWHERE (toLower(g.symbol) = toLower('BRAF') OR any(s IN coalesce(g.synonyms, []) WHERE toLower(s) = toLower('BRAF')))\n  AND toLower(v.name) CONTAINS toLower('V600E')\nMATCH (v)-[rel:AFFECTS_RESPONSE_TO]->(t:Therapy)\nWHERE (\n    toLower(t.name) = toLower('dabrafenib')\n    OR any(s IN coalesce(t.synonyms, []) WHERE toLower(s) = toLower('dabrafenib'))\n    OR toLower(t.name) CONTAINS toLower('dabrafenib')\n)\nAND toLower(rel.effect) = toLower('sensitivity')\nRETURN\n  v.name AS variant_name,\n  g.symbol AS gene_symbol,\n  t.name AS therapy_name,\n  rel.effect AS effect,\n  rel.disease_name AS disease_name,\n  coalesce(rel.pmids, []) AS pmids,\n  coalesce(rel.best_evidence_level, '') AS best_evidence_level,\n  coalesce(rel.evidence_levels, []) AS evidence_levels,\n  coalesce(rel.evidence_count, 0) AS evidence_count,\n  rel.avg_rating AS avg_rating,\n  rel.max_rating AS max_rating\nORDER BY best_evidence_level ASC, evidence_count DESC\nLIMIT 100",
+      "rows": [
+        {
+          "variant_name": "BRAF V600E",
+          "gene_symbol": "BRAF",
+          "therapy_name": "Dabrafenib",
+          "effect": "sensitivity",
+          "disease_name": "Lung Non-small Cell Carcinoma",
+          "pmids": [
+            "27283860"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "BRAF V600E",
+          "gene_symbol": "BRAF",
+          "therapy_name": "Dabrafenib",
+          "effect": "sensitivity",
+          "disease_name": "Solid Tumor",
+          "pmids": [
+            "37059834"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "BRAF V600E",
+          "gene_symbol": "BRAF",
+          "therapy_name": "Dabrafenib",
+          "effect": "sensitivity",
+          "disease_name": "Low Grade Glioma",
+          "pmids": [
+            "36375115"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "BRAF V600E",
+          "gene_symbol": "BRAF",
+          "therapy_name": "Dabrafenib",
+          "effect": "sensitivity",
+          "disease_name": "Melanoma",
+          "pmids": [
+            "23020132",
+            "24583796",
+            "25265492",
+            "28891408"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 4,
+          "avg_rating": 4.75,
+          "max_rating": 5
+        },
+        {
+          "variant_name": "BRAF V600E",
+          "gene_symbol": "BRAF",
+          "therapy_name": "Dabrafenib",
+          "effect": "sensitivity",
+          "disease_name": "Colorectal Cancer",
+          "pmids": [
+            "22608338",
+            "29431699"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 2,
+          "avg_rating": 3.5,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "BRAF V600E",
+          "gene_symbol": "BRAF",
+          "therapy_name": "Dabrafenib",
+          "effect": "sensitivity",
+          "disease_name": "Biliary Tract Cancer",
+          "pmids": [
+            "169315"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "BRAF V600E",
+          "gene_symbol": "BRAF",
+          "therapy_name": "Dabrafenib",
+          "effect": "sensitivity",
+          "disease_name": "Cancer",
+          "pmids": [
+            "32758030"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "BRAF V600E",
+          "gene_symbol": "BRAF",
+          "therapy_name": "Dabrafenib",
+          "effect": "sensitivity",
+          "disease_name": "Skin Melanoma",
+          "pmids": [
+            "25399551"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "BRAF V600E",
+          "gene_symbol": "BRAF",
+          "therapy_name": "Dabrafenib",
+          "effect": "sensitivity",
+          "disease_name": "Anaplastic Thyroid Carcinoma",
+          "pmids": [
+            "29072975"
+          ],
+          "best_evidence_level": "B",
+          "evidence_levels": [
+            "B"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 4,
+          "max_rating": 4
+        },
+        {
+          "variant_name": "BRAF V600E",
+          "gene_symbol": "BRAF",
+          "therapy_name": "Dabrafenib",
+          "effect": "sensitivity",
+          "disease_name": "Intrahepatic Cholangiocarcinoma",
+          "pmids": [
+            "25435907",
+            "28078132"
+          ],
+          "best_evidence_level": "C",
+          "evidence_levels": [
+            "C"
+          ],
+          "evidence_count": 2,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "BRAF V600E",
+          "gene_symbol": "BRAF",
+          "therapy_name": "Dabrafenib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Neuroendocrine Tumor",
+          "pmids": [
+            "27048246"
+          ],
+          "best_evidence_level": "C",
+          "evidence_levels": [
+            "C"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "BRAF V600E",
+          "gene_symbol": "BRAF",
+          "therapy_name": "Dabrafenib",
+          "effect": "sensitivity",
+          "disease_name": "Cholangiocarcinoma",
+          "pmids": [
+            "28480077"
+          ],
+          "best_evidence_level": "C",
+          "evidence_levels": [
+            "C"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 3,
+          "max_rating": 3
+        },
+        {
+          "variant_name": "BRAF V600E AND BRAF V600M",
+          "gene_symbol": "BRAF",
+          "therapy_name": "Dabrafenib",
+          "effect": "sensitivity",
+          "disease_name": "Melanoma",
+          "pmids": [
+            "23031422"
+          ],
+          "best_evidence_level": "C",
+          "evidence_levels": [
+            "C"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 1,
+          "max_rating": 1
+        }
+      ],
+      "updatedAt": "2025-11-23T09:03:43.980Z"
+    }
   },
   {
     "id": "therapies_target_egfr_not_erbb2",
@@ -1419,12 +4918,6 @@
       ],
       "updatedAt": "2025-11-22T13:43:39.480Z"
     }
-  },
-  {
-    "id": "genes_sensitivity_pembrolizumab_nivolumab_melanoma",
-    "tab": "biomarkers_resistance",
-    "question": "Which genes predict sensitivity to pembrolizumab or nivolumab in melanoma?",
-    "cachedResponse": null
   },
   {
     "id": "genes_level_a_evidence_imatinib",
