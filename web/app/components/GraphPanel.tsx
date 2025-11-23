@@ -754,6 +754,29 @@ export default function GraphPanel({ rows, initialQuestion }: GraphPanelProps) {
                   </button>
                 </form>
                 
+                {/* Schema information */}
+                <div style={{
+                  marginTop: "12px",
+                  paddingTop: "12px",
+                  borderTop: "1px solid var(--border)",
+                  fontSize: "11px",
+                  color: "var(--text-2)",
+                  lineHeight: "1.5"
+                }}>
+                  <div style={{ marginBottom: "6px", fontWeight: 500, color: "var(--text-1)" }}>
+                    Queryable entities:
+                  </div>
+                  <div style={{ marginBottom: "8px" }}>
+                    Gene, Biomarker, Variant, Therapy, Disease
+                  </div>
+                  <div style={{ marginBottom: "6px", fontWeight: 500, color: "var(--text-1)" }}>
+                    Relationships:
+                  </div>
+                  <div>
+                    Biomarker <span style={{ color: "var(--accent)" }}>affects response</span> to Therapy • Therapy <span style={{ color: "var(--accent)" }}>targets</span> Gene
+                  </div>
+                </div>
+                
                 {/* Hidden cache override toggle - accessible via dev tools or keyboard shortcut (Ctrl+Shift+C) */}
                 <div style={{ 
                   position: "absolute", 
