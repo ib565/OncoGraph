@@ -661,8 +661,8 @@ export default function GraphPanel({ rows, initialQuestion }: GraphPanelProps) {
     return findExampleByQuestion(exampleQueries, lastQuery);
   }, [lastQuery, exampleQueries]);
 
-  // Handle moving genes to Hypothesis Analyzer
-  function handleMoveToHypothesisAnalyzer() {
+  // Handle moving genes to Functional Enrichment
+  function handleMoveToFunctionalEnrichment() {
     if (geneSymbols.length === 0) return;
     
     const geneString = geneSymbols.join(", ");
@@ -957,7 +957,7 @@ export default function GraphPanel({ rows, initialQuestion }: GraphPanelProps) {
                               <button
                                 type="button"
                                 className="primary-button"
-                                onClick={handleMoveToHypothesisAnalyzer}
+                                onClick={handleMoveToFunctionalEnrichment}
                                 style={{ 
                                   fontSize: '12px', 
                                   padding: '6px 12px',
@@ -965,10 +965,10 @@ export default function GraphPanel({ rows, initialQuestion }: GraphPanelProps) {
                                   alignItems: 'center',
                                   gap: '4px'
                                 }}
-                                title={`Move ${geneSymbols.length} gene symbols to Hypothesis Analyzer`}
+                                title={`Move ${geneSymbols.length} gene symbols to Functional Enrichment`}
                               >
                                 <span>🧬</span>
-                                <span>Move to Hypothesis Analyzer</span>
+                                <span>Move to Functional Enrichment</span>
                               </button>
                             </>
                           )}

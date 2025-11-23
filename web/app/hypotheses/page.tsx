@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import HypothesisAnalyzer from "../components/HypothesisAnalyzer";
+import FunctionalEnrichment from "../components/FunctionalEnrichment";
 
 export default function HypothesesPage() {
   const router = useRouter();
@@ -14,7 +14,7 @@ export default function HypothesesPage() {
 
   return (
     <section className="page-section">
-      <HypothesisAnalyzer onNavigateToQuery={handleNavigateToQuery} />
+      <FunctionalEnrichment onNavigateToQuery={handleNavigateToQuery} />
     </section>
   );
 }

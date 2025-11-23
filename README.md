@@ -52,7 +52,7 @@ Query: *"Which genes predict resistance to cetuximab or panitumumab in colorecta
 → **Result:** 13 genes (KRAS, NRAS, BRAF, ERBB2, PIK3CA, etc.) with 88 evidence items across 45 PMIDs
 
 **Step 2: Understand Biological Mechanism**  
-Action: Click "Move to Hypothesis Analyzer"  
+Action: Click "Move to Functional Enrichment"  
 → **Result:** Enrichment in ErbB signaling pathway (p < 1e-19)  
 → **AI Summary:** "These genes converge on receptor tyrosine kinase signaling. Dysregulation allows tumor cells to maintain proliferative signals despite EGFR blockade."
 
@@ -91,7 +91,7 @@ This typically requires hours of manual work across multiple tools.
 - **Ask questions in plain English** about genes, variants, therapies, diseases
 - **LLM generates Cypher** → executes on Neo4j knowledge graph
 - **Results include** PMIDs, sources, interactive visualization, and raw Cypher
-- **One-click export** of genes to Hypothesis Analyzer
+- **One-click export** of genes to Functional Enrichment
 
 **🧬 Pathway Enrichment Analysis**
 - **Over-representation analysis** via Enrichr (Reactome 2022, GO BP 2023, KEGG 2021)
@@ -220,7 +220,7 @@ These examples are stored in `web/app/data/exampleQueries.json` and can include 
 - List therapies with variant-level biomarkers in non-small cell lung cancer
 - In colorectal cancer, which ERBB2 or EGFR variants have biomarker evidence?
 
-### Gene Lists for Hypothesis Analyzer
+### Gene Lists for Functional Enrichment
 
 **Anti-EGFR resistance (colorectal cancer):**
 ```

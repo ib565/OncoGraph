@@ -6,7 +6,7 @@ import { useAppContext } from "../contexts/AppContext";
 
 const tabs = [
   { href: "/", label: "Graph Q&A" },
-  { href: "/hypotheses", label: "Hypothesis Analyzer" },
+  { href: "/hypotheses", label: "Functional Enrichment" },
 ];
 
 export default function TopBar() {

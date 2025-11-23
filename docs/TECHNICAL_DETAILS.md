@@ -62,7 +62,7 @@ Multi-layer validation prevents injection attacks while enabling flexible querie
 - **Resource limiting**: Auto-enforces bounded LIMIT (default 100, max 200)
 - **Query rewriting**: Automatic case-insensitive disease filter conversion
 
-## Hypothesis Analyzer
+## Functional Enrichment
 
 Integrates statistical pathway enrichment with AI interpretation for comprehensive gene function analysis.
 

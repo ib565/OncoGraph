@@ -20,7 +20,7 @@ type GraphState = {
   run_id: string | null;
 };
 
-// Types for Hypothesis Analyzer state
+// Types for Functional Enrichment state
 type EnrichmentResponse = {
   summary: string;
   valid_genes: string[];
