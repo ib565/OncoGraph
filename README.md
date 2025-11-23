@@ -151,7 +151,6 @@ This typically requires hours of manual work across multiple tools.
 
 ### Notes
 - “Biomarker” is used as an extra label on Gene/Variant for convenience.  
-- Pathway/Analysis nodes are not added yet.
 
 ---
 
