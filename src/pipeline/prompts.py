@@ -87,6 +87,50 @@ SCHEMA_SNIPPET = dedent(
       ORDER BY best_evidence_level ASC, evidence_count DESC
       LIMIT 100
 
+    Canonical example (AFFECTS; gene-level filtered post-aggregation; adapt values):
+      MATCH (b:Biomarker)-[rel:AFFECTS_RESPONSE_TO]->(t:Therapy)
+      WHERE (
+        toLower(t.name) = toLower('imatinib')
+        OR any(s IN coalesce(t.synonyms, []) WHERE toLower(s) = toLower('imatinib'))
+      )
+      AND toLower(rel.effect) = 'sensitivity'
+      OPTIONAL MATCH (b)-[:VARIANT_OF]->(g:Gene)
+      WITH CASE WHEN b:Gene THEN b.symbol ELSE g.symbol END AS gene_symbol,
+           t.name AS therapy_name,
+           rel.disease_name AS disease_name,
+           rel
+      WHERE gene_symbol IS NOT NULL
+      WITH gene_symbol, therapy_name, disease_name,
+           collect(coalesce(rel.pmids, [])) AS pmid_groups,
+           collect(coalesce(rel.evidence_levels, [])) AS level_groups,
+           min(rel.best_evidence_level) AS best_evidence_level,
+           sum(rel.evidence_count) AS evidence_count,
+           avg(rel.avg_rating) AS avg_rating,
+           max(rel.max_rating) AS max_rating
+      WHERE toLower(best_evidence_level) = 'a'
+      RETURN
+        NULL AS variant_name,
+        gene_symbol,
+        therapy_name,
+        'sensitivity' AS effect,
+        disease_name,
+        reduce(acc = [], group IN pmid_groups | 
+          reduce(inner = acc, pmid IN group | 
+            CASE WHEN pmid IN inner THEN inner ELSE inner + pmid END
+          )
+        ) AS pmids,
+        best_evidence_level,
+        reduce(acc = [], group IN level_groups | 
+          reduce(inner = acc, lvl IN group | 
+            CASE WHEN lvl IN inner THEN inner ELSE inner + lvl END
+          )
+        ) AS evidence_levels,
+        evidence_count,
+        avg_rating,
+        max_rating
+      ORDER BY best_evidence_level ASC, evidence_count DESC
+      LIMIT 100
+
     Canonical example (AFFECTS; adapt values as needed):
       MATCH (b:Biomarker)-[rel:AFFECTS_RESPONSE_TO]->(t:Therapy)
       WHERE (
@@ -172,11 +216,26 @@ SCHEMA_SNIPPET = dedent(
       • best_evidence_level: use min(rel.best_evidence_level) (exploit 'A' < 'B').
       • evidence_count: use sum(rel.evidence_count).
       • avg_rating: use avg(rel.avg_rating).
-      • pmids: flatten using reduce(s=[], p IN collect(rel.pmids) | s + p).
+      • pmids: flatten using reduce(s = [], group IN collect(coalesce(rel.pmids, [])) | s + group)
+        and, when you need unique PMIDs per gene–therapy–disease tuple, use the nested
+        REDUCE/CASE pattern from the "gene-level with deduplicated pmids/evidence_levels"
+        example to deduplicate within the accumulator instead of wrapping REDUCE() in
+        COLLECT(DISTINCT ...).
+      • evidence_levels: when aggregating arrays like rel.evidence_levels, follow the same
+        two-step pattern as for pmids: first collect the per-relationship lists, then
+        flatten and deduplicate them with nested REDUCE/CASE logic as in the
+        "gene-level with deduplicated pmids/evidence_levels" example.
       • Prefer the one-step built-in aggregation pattern (single RETURN with
         min/sum/avg/max/collect(DISTINCT)) from the "gene-level with built-in aggregation"
-        example; use the longer multi-WITH reduce pipeline only when you truly need
+        example when simple flattening is sufficient; reach for the longer multi-WITH
+        REDUCE-based pipeline from the deduplicated example only when you truly need
         extra deduplication logic beyond those functions.
+    - Evidence-level filtering:
+      • When the user explicitly asks for "Level A" (or another specific tier), aggregate
+        the relationships first and then filter with `WHERE toLower(best_evidence_level) = '<level>'`
+        on the aggregated `best_evidence_level` (e.g., the canonical post-aggregation example).
+      • Do not pre-filter `rel.best_evidence_level` before aggregation unless the question
+        specifically limits the evidence set to that tier only.
     - Sorting (AFFECTS queries only):
       • ALWAYS sort results by quality: ORDER BY best_evidence_level ASC, evidence_count DESC.
       • Apply LIMIT 100 only AFTER sorting.
@@ -285,6 +344,12 @@ INSTRUCTION_PROMPT_TEMPLATE = dedent(
     - When evidence strength or ranking matters, point to the evidence metrics and sorting behavior
       from the schema (best_evidence_level, evidence_count, avg_rating, max_rating) without restating
       the full logic.
+    - When aggregating evidence across multiple relationships for the same gene–therapy–disease tuple,
+      indicate that pmids and evidence_levels should be aggregated and deduplicated according to the
+      canonical gene-level rules in the schema (do not specify Cypher syntax).
+    - When the question asks for a specific evidence tier (e.g., "Level A"), note that the Cypher
+      should aggregate first and then filter on the computed `best_evidence_level` rather than
+      filtering each relationship individually.
 
     User question: {question}
     """
@@ -307,11 +372,20 @@ CYPHER_PROMPT_TEMPLATE = dedent(
       • gene-versus-variant granularity,
       • disease tokenization and filtering,
       • matching of genes, variants, therapies, and fusions,
+      • array aggregation and deduplication for pmids and evidence_levels, following the
+        canonical nested REDUCE-based patterns when uniqueness is required,
       • sorting and LIMIT behavior.
     - When a gene-level aggregate is required, default to the built-in aggregation
       pattern (single RETURN with min/sum/avg/max/collect(DISTINCT)) that appears in the
-      schema; only introduce multi-stage reduce pipelines when the instructions demand
-      additional deduplication beyond those functions.
+      schema; only introduce multi-stage REDUCE-based pipelines (as in the deduplicated
+      gene-level example) when the instructions or schema rules call for extra
+      deduplication beyond those functions.
+    - When deduplicating arrays that come from per-relationship lists (e.g., pmids, evidence_levels),
+      do not wrap REDUCE() results inside COLLECT(DISTINCT ...); instead perform the deduplication
+      inside the nested REDUCE/CASE logic as shown in the schema examples.
+    - When the instruction refers to a specific evidence tier (e.g., “Level A”), aggregate first,
+      compute `best_evidence_level` per tuple, and apply the filter to the aggregated column so that
+      counts/PMIDs still reflect all matching relationships.
     - Use inline single-quoted literals only (no Cypher parameters like $var).
     - Use case-insensitive string comparisons with toLower(), and wrap array properties
       (e.g., synonyms, tags, reference arrays) with coalesce(..., []) before any()/all() checks.
