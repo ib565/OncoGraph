@@ -28,7 +28,9 @@ _cache_ops_context: ContextVar[set[str] | None] = ContextVar("cache_operations",
 _cache_override_context: ContextVar[bool] = ContextVar("cache_override", default=False)
 
 # Check environment variable for global cache override
-_global_cache_override = os.getenv("DISABLE_CACHE", "").strip().lower() in {"1", "true", "yes"} or os.getenv("OVERRIDE_CACHE", "").strip().lower() in {"1", "true", "yes"}
+_global_cache_override = os.getenv("DISABLE_CACHE", "").strip().lower() in {"1", "true", "yes"} or os.getenv(
+    "OVERRIDE_CACHE", ""
+).strip().lower() in {"1", "true", "yes"}
 
 
 def start_cache_hit_collection() -> None:
@@ -75,7 +77,6 @@ class TTLCache:
                 del self._cache[key]
                 return None
 
-            note_cache_hit_from_key(key)
             # Deep copy to avoid mutation of cached values
             return self._deep_copy(value)
 
@@ -177,9 +178,9 @@ class PostgresCache:
                         """
                         SELECT value, expires_at 
                         FROM cache_entries 
-                        WHERE cache_key = %s
+                        WHERE cache_key = %s AND cache_type = %s
                         """,
-                        (key,),
+                        (key, self._cache_type),
                     )
                     row = cur.fetchone()
 
@@ -192,21 +193,20 @@ class PostgresCache:
                     if expires_at < datetime.now(UTC):
                         # Delete expired entry
                         cur.execute(
-                            "DELETE FROM cache_entries WHERE cache_key = %s",
-                            (key,),
+                            "DELETE FROM cache_entries WHERE cache_key = %s AND cache_type = %s",
+                            (key, self._cache_type),
                         )
                         return None
 
-                    note_cache_hit_from_key(key)
                     # Update access stats
                     cur.execute(
                         """
                         UPDATE cache_entries 
                         SET access_count = access_count + 1,
                             last_accessed_at = NOW()
-                        WHERE cache_key = %s
+                        WHERE cache_key = %s AND cache_type = %s
                         """,
-                        (key,),
+                        (key, self._cache_type),
                     )
 
                     # psycopg automatically deserializes JSONB to Python objects (dict/list)
@@ -240,6 +240,9 @@ class PostgresCache:
         try:
             expires_at = datetime.now(UTC) + timedelta(seconds=ttl)
             # Serialize value to JSON
+            # For Pydantic models, use model_dump() to get proper JSON-serializable dict
+            if hasattr(value, "model_dump"):
+                value = value.model_dump()
             value_json = json.dumps(value, default=str, ensure_ascii=False)
             run_id = get_run_id() or ""
 

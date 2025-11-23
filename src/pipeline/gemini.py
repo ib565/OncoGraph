@@ -20,7 +20,7 @@ from .types import (
     PipelineError,
     Summarizer,
 )
-from .utils import get_cache_override, get_llm_cache, make_cache_key
+from .utils import get_cache_override, get_llm_cache, make_cache_key, note_cache_hit_from_key
 
 try:  # pragma: no cover - optional dependency at runtime
     from google import genai  # type: ignore
@@ -241,6 +241,8 @@ class GeminiInstructionExpander(_GeminiBase, InstructionExpander):
         if not get_cache_override():
             cached_result = cache.get(cache_key)
             if cached_result is not None:
+                # Record cache hit after successful retrieval
+                note_cache_hit_from_key(cache_key)
                 # Log cache hit
                 if hasattr(self, "trace") and self.trace:
                     self.trace.record("cache_hit", {"cache_key": cache_key, "operation": "expand_instructions"})
@@ -268,6 +270,8 @@ class GeminiCypherGenerator(_GeminiBase, CypherGenerator):
         if not get_cache_override():
             cached_result = cache.get(cache_key)
             if cached_result is not None:
+                # Record cache hit after successful retrieval
+                note_cache_hit_from_key(cache_key)
                 # Log cache hit
                 if hasattr(self, "trace") and self.trace:
                     self.trace.record("cache_hit", {"cache_key": cache_key, "operation": "generate_cypher"})
@@ -295,6 +299,8 @@ class GeminiSummarizer(_GeminiBase, Summarizer):
         if not get_cache_override():
             cached_result = cache.get(cache_key)
             if cached_result is not None:
+                # Record cache hit after successful retrieval
+                note_cache_hit_from_key(cache_key)
                 # Log cache hit
                 if hasattr(self, "trace") and self.trace:
                     self.trace.record("cache_hit", {"cache_key": cache_key, "operation": "summarize"})
@@ -335,13 +341,78 @@ class GeminiEnrichmentSummarizer(_GeminiBase):
         cache_key = make_cache_key("summarize_enrichment", sorted(gene_list), top_n, enrichment_results)
         cached_result = cache.get(cache_key)
         if cached_result is not None:
-            # Log cache hit
-            if hasattr(self, "trace") and self.trace:
-                self.trace.record("cache_hit", {"cache_key": cache_key, "operation": "summarize_enrichment"})
-            # Reconstruct the Pydantic model from the cached dictionary
+            # Reconstruct the Pydantic model from the cached value
+            # Only log cache hit after successful reconstruction
             if isinstance(cached_result, dict):
-                return EnrichmentSummaryResponse(**cached_result)
-            return cached_result
+                # Normal case: cached as dictionary
+                try:
+                    result = EnrichmentSummaryResponse(**cached_result)
+                    # Record cache hit after successful reconstruction
+                    note_cache_hit_from_key(cache_key)
+                    # Only log cache hit after successful reconstruction
+                    if hasattr(self, "trace") and self.trace:
+                        self.trace.record("cache_hit", {"cache_key": cache_key, "operation": "summarize_enrichment"})
+                    return result
+                except (ValueError, TypeError) as e:
+                    # Invalid data in cache, delete and regenerate
+                    if hasattr(self, "trace") and self.trace:
+                        self.trace.record(
+                            "cache_corrupted",
+                            {
+                                "cache_key": cache_key,
+                                "operation": "summarize_enrichment",
+                                "error": str(e),
+                                "error_type": type(e).__name__,
+                                "cached_result_type": str(type(cached_result)),
+                            },
+                        )
+                    cache.delete(cache_key)
+            elif isinstance(cached_result, str):
+                # Edge case: cached as string (can happen with PostgresCache if serialization was incorrect)
+                # Try to parse as JSON and reconstruct
+                try:
+                    import json
+
+                    data = json.loads(cached_result)
+                    result = EnrichmentSummaryResponse(**data)
+                    # Record cache hit after successful reconstruction
+                    note_cache_hit_from_key(cache_key)
+                    # Only log cache hit after successful reconstruction
+                    if hasattr(self, "trace") and self.trace:
+                        self.trace.record("cache_hit", {"cache_key": cache_key, "operation": "summarize_enrichment"})
+                    return result
+                except (json.JSONDecodeError, ValueError, TypeError) as e:
+                    # If parsing fails, treat as corrupted cache entry
+                    # Log the failure for debugging
+                    if hasattr(self, "trace") and self.trace:
+                        self.trace.record(
+                            "cache_corrupted",
+                            {
+                                "cache_key": cache_key,
+                                "operation": "summarize_enrichment",
+                                "error": str(e),
+                                "error_type": type(e).__name__,
+                                "cached_result_preview": (
+                                    cached_result[:200] if len(cached_result) > 200 else cached_result
+                                ),
+                            },
+                        )
+                    # Clear it and continue to generate new result
+                    cache.delete(cache_key)
+            else:
+                # Unknown type, clear cache and regenerate
+                if hasattr(self, "trace") and self.trace:
+                    self.trace.record(
+                        "cache_corrupted",
+                        {
+                            "cache_key": cache_key,
+                            "operation": "summarize_enrichment",
+                            "error": f"Unexpected cached result type: {type(cached_result)}",
+                            "error_type": "TypeError",
+                            "cached_result_type": str(type(cached_result)),
+                        },
+                    )
+                cache.delete(cache_key)
 
         # Format enrichment results for the prompt
         formatted_results = []

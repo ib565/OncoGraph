@@ -845,6 +845,8 @@ def analyze_genes_stream(
             # Generate AI summary with follow-up questions
             step_started = __import__("time").perf_counter()
             try:
+                # Pass trace sink to summarizer for detailed logging
+                summarizer.trace = contextual_trace
                 summary_response = summarizer.summarize_enrichment(
                     enrichment_result.valid_genes, enrichment_result.enrichment_results, top_n=7
                 )
@@ -1106,6 +1108,8 @@ def analyze_genes(
         # Generate AI summary with follow-up questions
         step_started = __import__("time").perf_counter()
         try:
+            # Pass trace sink to summarizer for detailed logging
+            summarizer.trace = contextual_trace
             summary_response = summarizer.summarize_enrichment(result.valid_genes, result.enrichment_results, top_n=7)
         except Exception as exc:
             import traceback

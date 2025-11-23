@@ -10,7 +10,7 @@ from typing import Any
 import pandas as pd
 import plotly.graph_objects as go
 
-from .utils import get_enrichment_cache, make_cache_key
+from .utils import get_enrichment_cache, make_cache_key, note_cache_hit_from_key
 
 try:  # pragma: no cover - optional dependencies
     import gseapy as gp
@@ -77,6 +77,8 @@ class GeneEnrichmentAnalyzer:
         cache_key = make_cache_key("normalize_genes", sorted(cleaned_genes))
         cached_result = self._cache.get(cache_key)
         if cached_result is not None:
+            # Record cache hit after successful retrieval
+            note_cache_hit_from_key(cache_key)
             # Log cache hit
             if self.trace:
                 self._trace("cache_hit", {"cache_key": cache_key, "operation": "normalize_genes"})
@@ -175,6 +177,8 @@ class GeneEnrichmentAnalyzer:
         cache_key = make_cache_key("run_enrichment", sorted(gene_list), sorted(libraries_to_use))
         cached_result = self._cache.get(cache_key)
         if cached_result is not None:
+            # Record cache hit after successful retrieval
+            note_cache_hit_from_key(cache_key)
             # Log cache hit
             if self.trace:
                 self._trace("cache_hit", {"cache_key": cache_key, "operation": "run_enrichment"})
@@ -230,7 +234,7 @@ class GeneEnrichmentAnalyzer:
                         "adjusted_p_value": float(row["Adjusted P-value"]),
                         "odds_ratio": (float(row["Odds Ratio"]) if pd.notna(row["Odds Ratio"]) else None),
                         "gene_count": int(row["Gene_Count"]),
-                        "genes": row["Genes"].split(";") if pd.notna(row["Genes"]) else [],
+                        "genes": sorted(row["Genes"].split(";")) if pd.notna(row["Genes"]) else [],
                         "description": row.get("Description", ""),
                     }
                 )
