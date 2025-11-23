@@ -4923,7 +4923,96 @@
     "id": "genes_level_a_evidence_imatinib",
     "tab": "evidence_precision",
     "question": "List genes with Level A evidence for sensitivity to imatinib.",
-    "cachedResponse": null
+    "cachedResponse": {
+      "answer": "Genes with Level A evidence for sensitivity to **Imatinib** include:\n\n*   **KIT** (Level A, 21 items) in **Gastrointestinal Stromal Tumor**. [PMID: 25239608, PMID: 18955451, PMID: 14645423]\n*   **BCR** (Level A, 5 items) in **Chronic Myeloid Leukemia**. [PMID: 20537386, PMID: 15930265, PMID: 19075254]\n*   **FIP1L1** (Level A, 3 items) in **Myeloid And Lymphoid Neoplasms With Eosinophilia And Abnormalities Of PDGFRA, PDGFRB, And FGFR1**. [PMID: 12660384, PMID: 14504092, PMID: 24456122]\n*   **BCR** (Level A, 1 item) in **Acute Myeloid Leukemia**. [PMID: 12476305]",
+      "cypher": "MATCH (b:Biomarker)-[rel:AFFECTS_RESPONSE_TO]->(t:Therapy)\nWHERE (\n  toLower(t.name) = toLower('imatinib')\n  OR any(s IN coalesce(t.synonyms, []) WHERE toLower(s) = toLower('imatinib'))\n)\nAND toLower(rel.effect) = 'sensitivity'\nOPTIONAL MATCH (b)-[:VARIANT_OF]->(g:Gene)\nWITH CASE WHEN b:Gene THEN b.symbol ELSE g.symbol END AS gene_symbol,\n     t.name AS therapy_name,\n     rel.disease_name AS disease_name,\n     rel\nWHERE gene_symbol IS NOT NULL\nWITH gene_symbol, therapy_name, disease_name,\n     collect(coalesce(rel.pmids, [])) AS pmid_groups,\n     collect(coalesce(rel.evidence_levels, [])) AS level_groups,\n     min(rel.best_evidence_level) AS best_evidence_level,\n     sum(rel.evidence_count) AS evidence_count,\n     avg(rel.avg_rating) AS avg_rating,\n     max(rel.max_rating) AS max_rating\nWHERE toLower(best_evidence_level) = 'a'\nRETURN\n  NULL AS variant_name,\n  gene_symbol,\n  therapy_name,\n  'sensitivity' AS effect,\n  disease_name,\n  reduce(acc = [], group IN pmid_groups |\n    reduce(inner = acc, pmid IN group |\n      CASE WHEN pmid IN inner THEN inner ELSE inner + pmid END\n    )\n  ) AS pmids,\n  best_evidence_level,\n  reduce(acc = [], group IN level_groups |\n    reduce(inner = acc, lvl IN group |\n      CASE WHEN lvl IN inner THEN inner ELSE inner + lvl END\n    )\n  ) AS evidence_levels,\n  evidence_count,\n  avg_rating,\n  max_rating\nORDER BY best_evidence_level ASC, evidence_count DESC\nLIMIT 100",
+      "rows": [
+        {
+          "variant_name": null,
+          "gene_symbol": "KIT",
+          "therapy_name": "Imatinib",
+          "effect": "sensitivity",
+          "disease_name": "Gastrointestinal Stromal Tumor",
+          "pmids": [
+            "25239608",
+            "18955451",
+            "14645423",
+            "16624552",
+            "23231951",
+            "22114577"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "D",
+            "B",
+            "A",
+            "C"
+          ],
+          "evidence_count": 21,
+          "avg_rating": 2.5588235294117645,
+          "max_rating": 4
+        },
+        {
+          "variant_name": null,
+          "gene_symbol": "BCR",
+          "therapy_name": "Imatinib",
+          "effect": "sensitivity",
+          "disease_name": "Chronic Myeloid Leukemia",
+          "pmids": [
+            "20537386",
+            "15930265",
+            "19075254"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A",
+            "D"
+          ],
+          "evidence_count": 5,
+          "avg_rating": 3.5,
+          "max_rating": 5
+        },
+        {
+          "variant_name": null,
+          "gene_symbol": "FIP1L1",
+          "therapy_name": "Imatinib",
+          "effect": "sensitivity",
+          "disease_name": "Myeloid And Lymphoid Neoplasms With Eosinophilia And Abnormalities Of PDGFRA, PDGFRB, And FGFR1",
+          "pmids": [
+            "12660384",
+            "14504092",
+            "24456122"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A",
+            "B",
+            "C"
+          ],
+          "evidence_count": 3,
+          "avg_rating": 3.33,
+          "max_rating": 4
+        },
+        {
+          "variant_name": null,
+          "gene_symbol": "BCR",
+          "therapy_name": "Imatinib",
+          "effect": "sensitivity",
+          "disease_name": "Acute Myeloid Leukemia",
+          "pmids": [
+            "12476305"
+          ],
+          "best_evidence_level": "A",
+          "evidence_levels": [
+            "A"
+          ],
+          "evidence_count": 1,
+          "avg_rating": 5,
+          "max_rating": 5
+        }
+      ],
+      "updatedAt": "2025-11-23T09:23:40.977Z"
+    }
   }
 ]
 
