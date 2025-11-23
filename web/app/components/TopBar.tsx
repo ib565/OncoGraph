@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useAppContext } from "../contexts/AppContext";
 
@@ -15,7 +16,16 @@ export default function TopBar() {
 
   return (
     <div className="top-bar">
-      <h1 className="top-bar-title">OncoGraph</h1>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <Image
+          src="/icon.png"
+          alt="OncoGraph"
+          width={34}
+          height={34}
+          style={{ display: "block" }}
+        />
+        <h1 className="top-bar-title">OncoGraph</h1>
+      </div>
 
       <nav className="top-bar-nav" aria-label="Primary">
         {tabs.map((tab) => {

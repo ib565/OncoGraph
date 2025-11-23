@@ -5,6 +5,10 @@ import ClientWrapper from "./ClientWrapper";
 export const metadata: Metadata = {
   title: "OncoGraph",
   description: "Answers oncology questions using knowledge graph backed citations.",
+  icons: {
+    icon: "/icon.png",
+    apple: "/icon.png",
+  },
 };
 
 export default function RootLayout({
