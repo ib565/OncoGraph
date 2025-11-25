@@ -44,7 +44,7 @@ export default function TopBar() {
 
       <div className="top-bar-actions">
         <a
-          href="https://github.com/ib565/OncoGraph-Engine"
+          href="https://github.com/ib565/OncoGraph"
           target="_blank"
           rel="noopener noreferrer"
           className="top-bar-link"
