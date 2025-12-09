@@ -23,3 +23,10 @@ line-length = 120
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
+
+[tool.pytest.ini_options]
+markers = [
+    "asyncio: mark test as asyncio",
+    "llm_integration: mark test as requiring real LLM API key",
+]
+asyncio_mode = "auto"
