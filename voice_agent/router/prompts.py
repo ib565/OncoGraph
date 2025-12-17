@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from textwrap import dedent
 
-from .models import INTENT_IDS, INTENT_REQUIRED_ENTITIES
+from .models import INTENT_DESCRIPTIONS, INTENT_EXAMPLES, INTENT_IDS, INTENT_REQUIRED_ENTITIES
 
 ROUTER_SYSTEM_MESSAGE = """You are a fast intent router for an oncology knowledge graph.
 You will be given a user query and you will need to determine the intent of the query, 
@@ -13,48 +13,53 @@ along with the relevant entities that are present in the query.
 def _format_intent_table() -> str:
     rows: list[str] = []
     for intent in INTENT_IDS:
+        description = INTENT_DESCRIPTIONS[intent]
         required = INTENT_REQUIRED_ENTITIES[intent]
         required_str = ", ".join(required) if required else "none"
-        rows.append(f"- {intent}: required = {required_str}")
+        rows.append(f"- {intent}: {description} (required = {required_str})")
     return "\n".join(rows)
 
 
-FEW_SHOT_EXAMPLES = [
-    ("Which genes predict resistance to cetuximab?", "resistance_biomarkers_query", {"therapy": "cetuximab"}),
-    ("What does vemurafenib target?", "therapy_targets_query", {"therapy": "vemurafenib"}),
-    ("What therapies target BRAF?", "gene_targeting_therapies_query", {"gene": "BRAF"}),
-    ("Tell me about EGFR", "gene_overview_query", {"gene": "EGFR"}),
-    ("What variants of KRAS have clinical evidence?", "gene_variants_query", {"gene": "KRAS"}),
-    (
-        "Does BRAF V600E respond to dabrafenib?",
-        "variant_response_query",
-        {"variant": "V600E", "therapy": "dabrafenib", "gene": "BRAF"},
-    ),
-    (
-        "What predicts sensitivity to imatinib in leukemia?",
-        "sensitivity_biomarkers_query",
-        {"therapy": "imatinib", "disease": "leukemia"},
-    ),
-    ("What biomarkers matter in lung cancer?", "disease_biomarkers_query", {"disease": "lung cancer"}),
-    ("What therapies have evidence in colorectal cancer?", "disease_therapies_query", {"disease": "colorectal cancer"}),
-    ("Tell me about cetuximab", "therapy_overview_query", {"therapy": "cetuximab"}),
-    ("Compare resistance profiles for cetuximab and panitumumab", "complex", {}),
-    ("Hello", "conversational", {}),
-    ("asdfghjkl", "unclear", {}),
-]
+def _format_intent_examples() -> str:
+    rows: list[str] = []
+    for intent in INTENT_IDS:
+        example = INTENT_EXAMPLES[intent]
+        rows.append(f'- {intent}: "{example}"')
+    return "\n".join(rows)
 
 
-def _format_examples() -> str:
+def _format_json_examples() -> str:
+    """Format 2-3 complete JSON examples showing clear intent matches."""
+    examples = [
+        (
+            "What genes predict resistance to trastuzumab?",
+            "resistance_biomarkers_query",
+            1.0,
+            {"therapy": "trastuzumab", "gene": None, "disease": None, "variant": None},
+        ),
+        (
+            "What is KRAS?",
+            "gene_overview_query",
+            1.0,
+            {"gene": "KRAS", "therapy": None, "disease": None, "variant": None},
+        ),
+        (
+            "What does erlotinib target?",
+            "therapy_targets_query",
+            1.0,
+            {"therapy": "erlotinib", "gene": None, "disease": None, "variant": None},
+        ),
+    ]
     lines: list[str] = []
-    for question, intent, entities in FEW_SHOT_EXAMPLES:
-        lines.append(f"User: {question}")
+    for query, intent, confidence, entities in examples:
+        lines.append(f'User: "{query}"')
         lines.append("Response JSON:")
         entity_parts = []
         for key in ("gene", "therapy", "disease", "variant"):
             value = entities.get(key)
             entity_parts.append(f'"{key}": "{value}"' if value is not None else f'"{key}": null')
         entities_json = ", ".join(entity_parts)
-        lines.append(f'{{"intent": "{intent}", "confidence": 0.9, "entities": {{{entities_json}}}}}')
+        lines.append(f'{{"intent": "{intent}", "confidence": {confidence}, "entities": {{{entities_json}}}}}')
         lines.append("")
     return "\n".join(lines).strip()
 
@@ -62,13 +67,17 @@ def _format_examples() -> str:
 def build_router_prompt(user_query: str) -> str:
     """Construct the router prompt with schema guidance and few-shots."""
     intent_table = _format_intent_table()
-    examples = _format_examples()
+    intent_examples = _format_intent_examples()
+    json_examples = _format_json_examples()
     prompt = dedent(
         f"""
         {ROUTER_SYSTEM_MESSAGE}
 
         Available intents (with required entities):
         {intent_table}
+
+        Intent examples:
+        {intent_examples}
 
         Entity rules:
         - Genes: uppercase symbols (e.g., KRAS, BRAF). Normalize obvious casing.
@@ -85,7 +94,7 @@ def build_router_prompt(user_query: str) -> str:
         - Use confidence=1.0 when the match is obvious; lower when ambiguous.
 
         Examples:
-        {examples}
+        {json_examples}
 
         User query: "{user_query.strip()}"
         Respond with JSON only.
@@ -97,7 +106,3 @@ def build_router_prompt(user_query: str) -> str:
 if __name__ == "__main__":
     print("Example prompt:")
     print(build_router_prompt("Which genes predict resistance to cetuximab?"))
-    print("Intent table:")
-    print(_format_intent_table())
-    print("Examples:")
-    print(_format_examples())

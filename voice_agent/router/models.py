@@ -54,6 +54,44 @@ INTENT_REQUIRED_ENTITIES: dict[IntentLiteral, list[str]] = {
     "unclear": [],
 }
 
+# Descriptions of what each intent represents (used in router prompts).
+INTENT_DESCRIPTIONS: dict[IntentLiteral, str] = {
+    "resistance_biomarkers_query": "Find genes whose variants predict resistance to a specific therapy",
+    "sensitivity_biomarkers_query": "Find genes whose variants predict sensitivity to a specific therapy",
+    "therapy_targets_query": "What genes does a therapy target via TARGETS relationship",
+    "gene_targeting_therapies_query": "What therapies target a specific gene",
+    "gene_variants_query": "List variants of a gene that have clinical evidence in the database",
+    "variant_response_query": "How does a specific variant affect response to a specific therapy",
+    "gene_overview_query": ("General summary statistics about a gene (variant count, therapies targeting it)"),
+    "therapy_overview_query": (
+        "General summary statistics about a therapy " "(modality, target genes, biomarker associations)"
+    ),
+    "disease_biomarkers_query": "Top biomarker genes for a specific disease",
+    "disease_therapies_query": "Therapies with biomarker evidence in a specific disease",
+    "conversational": ("Greetings, thanks, goodbyes, or off-topic chat that doesn't require database queries"),
+    "complex": (
+        "Multi-entity comparisons, exclusions, or queries requiring " "complex analysis beyond simple template matching"
+    ),
+    "unclear": "Cannot determine intent from the query - too vague, gibberish, or unclassifiable",
+}
+
+# Example queries for each intent (used in router prompts for clarity).
+INTENT_EXAMPLES: dict[IntentLiteral, str] = {
+    "resistance_biomarkers_query": "Which genes cause resistance to cetuximab?",
+    "sensitivity_biomarkers_query": "What predicts sensitivity to imatinib?",
+    "therapy_targets_query": "What does vemurafenib target?",
+    "gene_targeting_therapies_query": "What therapies target BRAF?",
+    "gene_variants_query": "What variants of KRAS have evidence?",
+    "variant_response_query": "Does BRAF V600E respond to dabrafenib?",
+    "gene_overview_query": "Tell me about EGFR",
+    "therapy_overview_query": "Tell me about cetuximab",
+    "disease_biomarkers_query": "What biomarkers matter in lung cancer?",
+    "disease_therapies_query": "What therapies have evidence in colorectal cancer?",
+    "conversational": "Hello",
+    "complex": "Compare resistance profiles for cetuximab and panitumumab",
+    "unclear": "asdfghjkl",
+}
+
 
 class ExtractedEntities(BaseModel):
     """Entities pulled from the user transcript."""
