@@ -4,7 +4,10 @@ from textwrap import dedent
 
 from .models import INTENT_IDS, INTENT_REQUIRED_ENTITIES
 
-ROUTER_SYSTEM_MESSAGE = "You are a fast intent router for an oncology knowledge graph."
+ROUTER_SYSTEM_MESSAGE = """You are a fast intent router for an oncology knowledge graph.
+You will be given a user query and you will need to determine the intent of the query, 
+along with the relevant entities that are present in the query.
+"""
 
 
 def _format_intent_table() -> str:

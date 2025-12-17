@@ -84,11 +84,11 @@ Key prompt elements:
 - Confidence guidance: 1.0 for obvious matches, lower for ambiguous
 
 Examples:
-- "What causes resistance to cetuximab?" → resistance_biomarkers, {therapy: cetuximab}
-- "Tell me about KRAS" → gene_overview, {gene: KRAS}
-- "Does BRAF V600E respond to dabrafenib?" → variant_response, {variant: V600E, therapy: dabrafenib, gene: BRAF}
-- "Compare all EGFR inhibitors" → complex
-- "Thanks!" → conversational
+- "What causes resistance to cetuximab?" → resistance_biomarkers_query, {therapy: cetuximab}
+- "Tell me about KRAS" → gene_overview_query, {gene: KRAS}
+- "Does BRAF V600E respond to dabrafenib?" → variant_response_query, {variant: V600E, therapy: dabrafenib, gene: BRAF}
+- "Compare all EGFR inhibitors" → complex, {}
+- "Thanks!" → conversational, {}
 
 ### 1.4 Implementation Notes
 
@@ -103,43 +103,43 @@ Test the router against these queries (expected results in parentheses):
 
 ```
 "Which genes predict resistance to cetuximab?" 
-  → resistance_biomarkers, {therapy: cetuximab}
+  → resistance_biomarkers_query, {therapy: cetuximab}
 
 "What does vemurafenib target?"
-  → therapy_targets, {therapy: vemurafenib}
+  → therapy_targets_query, {therapy: vemurafenib}
 
 "What therapies target BRAF?"
-  → gene_targeting_therapies, {gene: BRAF}
+  → gene_targeting_therapies_query, {gene: BRAF}
 
 "Tell me about EGFR"
-  → gene_overview, {gene: EGFR}
+  → gene_overview_query, {gene: EGFR}
 
 "What variants of KRAS have clinical evidence?"
-  → gene_variants, {gene: KRAS}
+  → gene_variants_query, {gene: KRAS}
 
 "Does BRAF V600E respond to dabrafenib?"
-  → variant_response, {variant: V600E, therapy: dabrafenib}
+  → variant_response_query, {variant: V600E, therapy: dabrafenib}
 
 "What predicts sensitivity to imatinib in leukemia?"
-  → sensitivity_biomarkers, {therapy: imatinib, disease: leukemia}
+  → sensitivity_biomarkers_query, {therapy: imatinib, disease: leukemia}
 
 "What biomarkers matter in lung cancer?"
-  → disease_biomarkers, {disease: lung cancer}
+  → disease_biomarkers_query, {disease: lung cancer}
 
 "What therapies have evidence in colorectal cancer?"
-  → disease_therapies, {disease: colorectal cancer}
+  → disease_therapies_query, {disease: colorectal cancer}
 
 "Tell me about cetuximab"
-  → therapy_overview, {therapy: cetuximab}
+  → therapy_overview_query, {therapy: cetuximab}
 
 "Compare resistance profiles for cetuximab and panitumumab"
-  → complex
+  → complex, {}
 
 "Hello"
-  → conversational
+  → conversational, {}  
 
 "asdfghjkl"
-  → unclear
+  → unclear, {}
 ```
 
 ### Done When
@@ -262,7 +262,7 @@ Define a dataclass or Pydantic model:
 
 ### 3.2 Template Specifications
 
-#### Template 1: resistance_biomarkers
+#### Template 1: resistance_biomarkers_query
 
 **Purpose:** Find genes whose variants predict resistance to a therapy
 
@@ -286,7 +286,7 @@ Define a dataclass or Pydantic model:
 
 ---
 
-#### Template 2: sensitivity_biomarkers
+#### Template 2: sensitivity_biomarkers_query
 
 **Purpose:** Find genes whose variants predict sensitivity to a therapy
 
@@ -300,7 +300,7 @@ Define a dataclass or Pydantic model:
 
 ---
 
-#### Template 3: therapy_targets
+#### Template 3: therapy_targets_query
 
 **Purpose:** What genes does a therapy target (TARGETS relationship)
 
@@ -319,7 +319,7 @@ Define a dataclass or Pydantic model:
 
 ---
 
-#### Template 4: gene_targeting_therapies
+#### Template 4: gene_targeting_therapies_query
 
 **Purpose:** What therapies target a specific gene
 
@@ -337,7 +337,7 @@ Define a dataclass or Pydantic model:
 
 ---
 
-#### Template 5: gene_variants
+#### Template 5: gene_variants_query
 
 **Purpose:** List variants of a gene that have clinical evidence
 
@@ -357,7 +357,7 @@ Define a dataclass or Pydantic model:
 
 ---
 
-#### Template 6: variant_response
+#### Template 6: variant_response_query
 
 **Purpose:** How does a specific variant affect response to a specific therapy
 
@@ -376,7 +376,7 @@ Define a dataclass or Pydantic model:
 
 ---
 
-#### Template 7: gene_overview
+#### Template 7: gene_overview_query
 
 **Purpose:** Summary stats about a gene in the database
 
@@ -394,7 +394,7 @@ Define a dataclass or Pydantic model:
 
 ---
 
-#### Template 8: therapy_overview
+#### Template 8: therapy_overview_query
 
 **Purpose:** Summary stats about a therapy in the database
 
@@ -412,7 +412,7 @@ Define a dataclass or Pydantic model:
 
 ---
 
-#### Template 9: disease_biomarkers
+#### Template 9: disease_biomarkers_query
 
 **Purpose:** Top biomarker genes for a disease
 
@@ -432,7 +432,7 @@ Define a dataclass or Pydantic model:
 
 ---
 
-#### Template 10: disease_therapies
+#### Template 10: disease_therapies_query
 
 **Purpose:** Therapies with biomarker evidence in a disease
 
@@ -714,16 +714,16 @@ voice_agent/
 
 | ID | Required | Optional | Returns |
 |----|----------|----------|---------|
-| resistance_biomarkers | therapy | disease | gene, count, level |
-| sensitivity_biomarkers | therapy | disease | gene, count, level |
-| therapy_targets | therapy | — | gene, mechanism |
-| gene_targeting_therapies | gene | — | therapy, mechanism, modality |
-| gene_variants | gene | — | variant, count, level |
-| variant_response | variant, therapy | — | effect, disease, level |
-| gene_overview | gene | — | variant_count, therapy_count |
-| therapy_overview | therapy | — | modality, target_count, biomarker_count |
-| disease_biomarkers | disease | — | gene, count, level |
-| disease_therapies | disease | — | therapy, count |
+| resistance_biomarkers_query | therapy | disease | gene, count, level |
+| sensitivity_biomarkers_query | therapy | disease | gene, count, level |
+| therapy_targets_query | therapy | — | gene, mechanism |
+| gene_targeting_therapies_query | gene | — | therapy, mechanism, modality |
+| gene_variants_query | gene | — | variant, count, level |
+| variant_response_query | variant, therapy | — | effect, disease, level |
+| gene_overview_query | gene | — | variant_count, therapy_count |
+| therapy_overview_query | therapy | — | modality, target_count, biomarker_count |
+| disease_biomarkers_query | disease | — | gene, count, level |
+| disease_therapies_query | disease | — | therapy, count |
 
 ---
 
@@ -731,16 +731,16 @@ voice_agent/
 
 | Intent | Confidence Notes |
 |--------|------------------|
-| resistance_biomarkers | Keywords: "resistance", "resistant", "doesn't respond" |
-| sensitivity_biomarkers | Keywords: "sensitivity", "sensitive", "responds to", "effective" |
-| therapy_targets | Keywords: "target", "mechanism", "what does X target" |
-| gene_targeting_therapies | Keywords: "therapies for", "drugs targeting", "inhibitors of" |
-| gene_variants | Keywords: "variants", "mutations", "alterations of" |
-| variant_response | Requires both variant name AND therapy name |
-| gene_overview | Keywords: "tell me about [gene]", "what is [gene]" |
-| therapy_overview | Keywords: "tell me about [therapy]", "what is [therapy]" |
-| disease_biomarkers | Keywords: "biomarkers in [disease]", "markers for [disease]" |
-| disease_therapies | Keywords: "therapies in [disease]", "treatments for [disease]" |
+| resistance_biomarkers_query | Keywords: "resistance", "resistant", "doesn't respond" |
+| sensitivity_biomarkers_query | Keywords: "sensitivity", "sensitive", "responds to", "effective" |
+| therapy_targets_query | Keywords: "target", "mechanism", "what does X target" |
+| gene_targeting_therapies_query | Keywords: "therapies for", "drugs targeting", "inhibitors of" |
+| gene_variants_query | Keywords: "variants", "mutations", "alterations of" |
+| variant_response_query | Requires both variant name AND therapy name |
+| gene_overview_query | Keywords: "tell me about [gene]", "what is [gene]" |
+| therapy_overview_query | Keywords: "tell me about [therapy]", "what is [therapy]" |
+| disease_biomarkers_query | Keywords: "biomarkers in [disease]", "markers for [disease]" |
+| disease_therapies_query | Keywords: "therapies in [disease]", "treatments for [disease]" |
 | conversational | Greetings, thanks, goodbyes, off-topic |
 | complex | Multi-comparisons, exclusions, "all", "compare", "except" |
 | unclear | Gibberish, too vague, no identifiable intent |
