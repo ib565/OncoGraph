@@ -37,25 +37,25 @@ def _extract_query_from_prompt(prompt: str) -> str:
 @pytest.fixture()
 def stub_router(monkeypatch) -> GeminiRouter:
     responses = {
-        "Which genes predict resistance to cetuximab?": ("resistance_biomarkers", {"therapy": "cetuximab"}),
-        "What does vemurafenib target?": ("therapy_targets", {"therapy": "vemurafenib"}),
-        "What therapies target BRAF?": ("gene_targeting_therapies", {"gene": "BRAF"}),
-        "Tell me about EGFR": ("gene_overview", {"gene": "EGFR"}),
-        "What variants of KRAS have clinical evidence?": ("gene_variants", {"gene": "KRAS"}),
+        "Which genes predict resistance to cetuximab?": ("resistance_biomarkers_query", {"therapy": "cetuximab"}),
+        "What does vemurafenib target?": ("therapy_targets_query", {"therapy": "vemurafenib"}),
+        "What therapies target BRAF?": ("gene_targeting_therapies_query", {"gene": "BRAF"}),
+        "Tell me about EGFR": ("gene_overview_query", {"gene": "EGFR"}),
+        "What variants of KRAS have clinical evidence?": ("gene_variants_query", {"gene": "KRAS"}),
         "Does BRAF V600E respond to dabrafenib?": (
-            "variant_response",
+            "variant_response_query",
             {"variant": "V600E", "therapy": "dabrafenib", "gene": "BRAF"},
         ),
         "What predicts sensitivity to imatinib in leukemia?": (
-            "sensitivity_biomarkers",
+            "sensitivity_biomarkers_query",
             {"therapy": "imatinib", "disease": "leukemia"},
         ),
-        "What biomarkers matter in lung cancer?": ("disease_biomarkers", {"disease": "lung cancer"}),
+        "What biomarkers matter in lung cancer?": ("disease_biomarkers_query", {"disease": "lung cancer"}),
         "What therapies have evidence in colorectal cancer?": (
-            "disease_therapies",
+            "disease_therapies_query",
             {"disease": "colorectal cancer"},
         ),
-        "Tell me about cetuximab": ("therapy_overview", {"therapy": "cetuximab"}),
+        "Tell me about cetuximab": ("therapy_overview_query", {"therapy": "cetuximab"}),
         "Compare resistance profiles for cetuximab and panitumumab": ("complex", {}),
         "Hello": ("conversational", {}),
         "asdfghjkl": ("unclear", {}),
@@ -87,16 +87,16 @@ def stub_router(monkeypatch) -> GeminiRouter:
 @pytest.mark.asyncio()
 async def test_stage_examples_route_correctly(stub_router: GeminiRouter):
     for query, expected_intent in [
-        ("Which genes predict resistance to cetuximab?", "resistance_biomarkers"),
-        ("What does vemurafenib target?", "therapy_targets"),
-        ("What therapies target BRAF?", "gene_targeting_therapies"),
-        ("Tell me about EGFR", "gene_overview"),
-        ("What variants of KRAS have clinical evidence?", "gene_variants"),
-        ("Does BRAF V600E respond to dabrafenib?", "variant_response"),
-        ("What predicts sensitivity to imatinib in leukemia?", "sensitivity_biomarkers"),
-        ("What biomarkers matter in lung cancer?", "disease_biomarkers"),
-        ("What therapies have evidence in colorectal cancer?", "disease_therapies"),
-        ("Tell me about cetuximab", "therapy_overview"),
+        ("Which genes predict resistance to cetuximab?", "resistance_biomarkers_query"),
+        ("What does vemurafenib target?", "therapy_targets_query"),
+        ("What therapies target BRAF?", "gene_targeting_therapies_query"),
+        ("Tell me about EGFR", "gene_overview_query"),
+        ("What variants of KRAS have clinical evidence?", "gene_variants_query"),
+        ("Does BRAF V600E respond to dabrafenib?", "variant_response_query"),
+        ("What predicts sensitivity to imatinib in leukemia?", "sensitivity_biomarkers_query"),
+        ("What biomarkers matter in lung cancer?", "disease_biomarkers_query"),
+        ("What therapies have evidence in colorectal cancer?", "disease_therapies_query"),
+        ("Tell me about cetuximab", "therapy_overview_query"),
         ("Compare resistance profiles for cetuximab and panitumumab", "complex"),
         ("Hello", "conversational"),
         ("asdfghjkl", "unclear"),
@@ -110,7 +110,7 @@ async def test_stage_examples_route_correctly(stub_router: GeminiRouter):
 async def test_confidence_is_clamped(monkeypatch):
     def fake_call(prompt: str) -> str:
         payload = {
-            "intent": "gene_overview",
+            "intent": "gene_overview_query",
             "confidence": 1.7,
             "entities": {"gene": "KRAS", "therapy": None, "disease": None, "variant": None},
         }
@@ -165,7 +165,7 @@ async def test_real_llm_resistance_biomarkers():
         pytest.skip("GOOGLE_API_KEY not set, skipping LLM integration test")
 
     result = await route_query("Which genes predict resistance to cetuximab?", debug=True)
-    assert result.intent == "resistance_biomarkers"
+    assert result.intent == "resistance_biomarkers_query"
     assert result.entities.therapy == "cetuximab"
     assert 0.0 <= result.confidence <= 1.0
     assert result.raw_model_output is not None
@@ -179,7 +179,7 @@ async def test_real_llm_gene_overview():
         pytest.skip("GOOGLE_API_KEY not set, skipping LLM integration test")
 
     result = await route_query("Tell me about KRAS")
-    assert result.intent == "gene_overview"
+    assert result.intent == "gene_overview_query"
     assert result.entities.gene == "KRAS"
     assert result.confidence >= 0.6  # Should be confident for clear queries
 
@@ -192,7 +192,7 @@ async def test_real_llm_variant_response():
         pytest.skip("GOOGLE_API_KEY not set, skipping LLM integration test")
 
     result = await route_query("Does BRAF V600E respond to dabrafenib?")
-    assert result.intent == "variant_response"
+    assert result.intent == "variant_response_query"
     assert result.entities.variant == "V600E"
     assert result.entities.therapy == "dabrafenib"
     assert result.entities.gene == "BRAF"
@@ -223,5 +223,5 @@ async def test_real_llm_latency():
     result = await route_query("What therapies target BRAF?", timeout_s=10.0)
     latency = time.perf_counter() - start
 
-    assert result.intent == "gene_targeting_therapies"
+    assert result.intent == "gene_targeting_therapies_query"
     assert latency < 5.0  # Should complete in under 5 seconds

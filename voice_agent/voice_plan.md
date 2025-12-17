@@ -54,16 +54,16 @@ Create models for structured LLM output:
 
 | Intent ID | Description | Required Entities |
 |-----------|-------------|-------------------|
-| `resistance_biomarkers` | Genes predicting resistance | therapy |
-| `sensitivity_biomarkers` | Genes predicting sensitivity | therapy |
-| `therapy_targets` | What genes a therapy targets | therapy |
+| `resistance_biomarkers_query` | Genes predicting resistance | therapy |
+| `sensitivity_biomarkers_query` | Genes predicting sensitivity | therapy |
+| `therapy_targets_query` | What genes a therapy targets | therapy |
 | `gene_targeting_therapies` | What therapies target a gene | gene |
-| `gene_variants` | Variants of a gene with evidence | gene |
-| `variant_response` | Specific variant + therapy response | variant, therapy |
-| `gene_overview` | General info about a gene | gene |
-| `therapy_overview` | General info about a therapy | therapy |
-| `disease_biomarkers` | Top biomarkers in a disease | disease |
-| `disease_therapies` | Therapies with evidence in a disease | disease |
+| `gene_variants_query` | Variants of a gene with evidence | gene |
+| `variant_response_query` | Specific variant + therapy response | variant, therapy |
+| `gene_overview_query` | General info about a gene | gene |
+| `therapy_overview_query` | General info about a therapy | therapy |
+| `disease_biomarkers_query` | Top biomarkers in a disease | disease |
+| `disease_therapies_query` | Therapies with evidence in a disease | disease |
 | `conversational` | Greetings, thanks, off-topic chat | none |
 | `complex` | Multi-entity comparisons, exclusions, etc. | varies |
 | `unclear` | Can't determine intent | none |
