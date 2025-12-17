@@ -17,24 +17,24 @@ def _format_intent_table() -> str:
 
 
 FEW_SHOT_EXAMPLES = [
-    ("Which genes predict resistance to cetuximab?", "resistance_biomarkers", {"therapy": "cetuximab"}),
-    ("What does vemurafenib target?", "therapy_targets", {"therapy": "vemurafenib"}),
-    ("What therapies target BRAF?", "gene_targeting_therapies", {"gene": "BRAF"}),
-    ("Tell me about EGFR", "gene_overview", {"gene": "EGFR"}),
-    ("What variants of KRAS have clinical evidence?", "gene_variants", {"gene": "KRAS"}),
+    ("Which genes predict resistance to cetuximab?", "resistance_biomarkers_query", {"therapy": "cetuximab"}),
+    ("What does vemurafenib target?", "therapy_targets_query", {"therapy": "vemurafenib"}),
+    ("What therapies target BRAF?", "gene_targeting_therapies_query", {"gene": "BRAF"}),
+    ("Tell me about EGFR", "gene_overview_query", {"gene": "EGFR"}),
+    ("What variants of KRAS have clinical evidence?", "gene_variants_query", {"gene": "KRAS"}),
     (
         "Does BRAF V600E respond to dabrafenib?",
-        "variant_response",
+        "variant_response_query",
         {"variant": "V600E", "therapy": "dabrafenib", "gene": "BRAF"},
     ),
     (
         "What predicts sensitivity to imatinib in leukemia?",
-        "sensitivity_biomarkers",
+        "sensitivity_biomarkers_query",
         {"therapy": "imatinib", "disease": "leukemia"},
     ),
-    ("What biomarkers matter in lung cancer?", "disease_biomarkers", {"disease": "lung cancer"}),
-    ("What therapies have evidence in colorectal cancer?", "disease_therapies", {"disease": "colorectal cancer"}),
-    ("Tell me about cetuximab", "therapy_overview", {"therapy": "cetuximab"}),
+    ("What biomarkers matter in lung cancer?", "disease_biomarkers_query", {"disease": "lung cancer"}),
+    ("What therapies have evidence in colorectal cancer?", "disease_therapies_query", {"disease": "colorectal cancer"}),
+    ("Tell me about cetuximab", "therapy_overview_query", {"therapy": "cetuximab"}),
     ("Compare resistance profiles for cetuximab and panitumumab", "complex", {}),
     ("Hello", "conversational", {}),
     ("asdfghjkl", "unclear", {}),
@@ -78,7 +78,6 @@ def build_router_prompt(user_query: str) -> str:
         - Strict JSON matching:
           {{"intent": <intent>, "confidence": <float 0-1>,
             "entities": {{"gene": str|null, "therapy": str|null, "disease": str|null, "variant": str|null}}}}
-        - No code fences, no explanations, no extra fields.
         - Set intent="unclear" with confidence<=0.3 if you cannot classify.
         - Use confidence=1.0 when the match is obvious; lower when ambiguous.
 
@@ -92,3 +91,10 @@ def build_router_prompt(user_query: str) -> str:
     return prompt
 
 
+if __name__ == "__main__":
+    print("Example prompt:")
+    print(build_router_prompt("Which genes predict resistance to cetuximab?"))
+    print("Intent table:")
+    print(_format_intent_table())
+    print("Examples:")
+    print(_format_examples())

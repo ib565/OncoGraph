@@ -70,5 +70,3 @@ class RouteResult(BaseModel):
     intent: IntentLiteral
     confidence: float = Field(ge=0.0, le=1.0)
     entities: ExtractedEntities
-    # Optional raw payload for debugging when explicitly requested.
-    # raw_model_output: dict[str, object] | None = None
