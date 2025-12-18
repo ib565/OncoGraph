@@ -8,6 +8,28 @@ This is a rough plan. Feel free to deviate from it and suggest improvements and 
 
 This document covers implementing a fast-path query router for the OncoGraph voice AI agent. The router classifies natural language queries, extracts entities, matches to pre-written Cypher templates, and returns voice-friendly responses.
 
+## Current Progress
+
+**✅ Stage 1: Router Prototype** - COMPLETE
+- Pydantic models, router prompt, LLM integration, timeout handling, and tests all implemented
+- Location: `voice_agent/router/`
+
+**⏳ Stage 2: Entity Index** - NEXT TO IMPLEMENT
+- Build entity normalization indexes for genes, therapies, and diseases
+- Required before template execution
+
+**⏳ Stage 3: Template Library** - Not Started (depends on Stage 2)
+- Pre-written Cypher templates for 10 query types
+
+**⏳ Stage 4: Fast Path Integration** - Not Started (depends on Stages 2 & 3)
+- Wire router → normalization → template → Neo4j → response
+
+**⏳ Stage 5: Complex Query Fallback** - Not Started (depends on Stage 4)
+- Handle conversational, complex, and unclear intents
+
+**⏳ Stage 6: Conversation Context** - Not Started (depends on Stage 4)
+- Handle follow-up queries with context
+
 ### Target Latency
 - Template-matched queries: <2 seconds end-to-end
 - Complex queries (fallback): acknowledge immediately, process in background
@@ -31,9 +53,11 @@ Return to conversation agent
 
 ---
 
-## Stage 1: Router Prototype
+## Stage 1: Router Prototype ✅ COMPLETE
 
 **Goal:** Prove intent classification and entity extraction works fast enough.
+
+**Implementation:** `voice_agent/router/` - All components implemented and tested.
 
 ### 1.1 Pydantic Models
 
@@ -190,17 +214,19 @@ Test the router against these queries (expected results in parentheses):
 ```
 
 ### Done When
-- [ ] Pydantic models defined and importable
-- [ ] Router prompt written
-- [ ] Router function implemented with LLM call
-- [ ] Function returns structured RouteResult
-- [ ] Latency measured
-- [ ] 10/12 test cases pass correctly
-- [ ] Timeout handling works
+- [x] Pydantic models defined and importable (`voice_agent/router/models.py`)
+- [x] Router prompt written (`voice_agent/router/prompts.py` with descriptions, examples, and JSON examples)
+- [x] Router function implemented with LLM call (`voice_agent/router/classifier.py` - `GeminiRouter.route_query()`)
+- [x] Function returns structured RouteResult
+- [x] Latency measured (logged in router with `latency_ms`)
+- [x] Test cases pass correctly (`voice_agent/router/test_classifier.py`)
+- [x] Timeout handling works (5s default timeout with fallback to unclear intent)
 
 ---
 
 ## Stage 2: Entity Index
+
+**Status:** ⏳ Not Started - Next to implement
 
 **Goal:** Fast deterministic normalization of user-spoken entities to canonical database names.
 
@@ -292,6 +318,8 @@ For MVP: rebuild on startup is fine. It's fast and ensures freshness.
 ---
 
 ## Stage 3: Template Library
+
+**Status:** ⏳ Not Started - Depends on Stage 2
 
 **Goal:** Pre-written Cypher templates for the 10 supported query types.
 
@@ -540,6 +568,8 @@ Each formatter should:
 
 ## Stage 4: Fast Path Integration
 
+**Status:** ⏳ Not Started - Depends on Stages 2 & 3
+
 **Goal:** Wire router → normalization → template → Neo4j → response into one function.
 
 ### 4.1 Main Handler Function
@@ -621,6 +651,8 @@ Test all 10 template types plus edge cases before adding voice.
 
 ## Stage 5: Complex Query Fallback
 
+**Status:** ⏳ Not Started - Depends on Stage 4
+
 **Goal:** Gracefully handle queries that don't match templates.
 
 ### 5.1 Fallback Triggers
@@ -669,6 +701,8 @@ When router can't classify:
 ---
 
 ## Stage 6: Conversation Context
+
+**Status:** ⏳ Not Started - Depends on Stage 4
 
 **Goal:** Handle follow-up queries that reference previous results.
 
