@@ -37,7 +37,7 @@ Return to conversation agent
 
 ### 1.1 Pydantic Models
 
-Create models for structured LLM output:
+Create models for structured LLM output (see `voice_agent/router/models.py` for the concrete implementation):
 
 **RouteResult**
 - `intent`: Literal enum of all template IDs plus "conversational", "complex", "unclear"
@@ -50,20 +50,26 @@ Create models for structured LLM output:
 - `disease`: str | None
 - `variant`: str | None
 
+In code, the router metadata is centralized in:
+- `INTENT_IDS`: ordered list of all supported intent IDs
+- `INTENT_REQUIRED_ENTITIES`: mapping from intent → list of required entities
+- `INTENT_DESCRIPTIONS`: mapping from intent → human-readable description
+- `INTENT_EXAMPLES`: mapping from intent → a single example query string
+
 ### 1.2 Intent Categories
 
 | Intent ID | Description | Required Entities |
 |-----------|-------------|-------------------|
-| `resistance_biomarkers_query` | Genes predicting resistance | therapy |
-| `sensitivity_biomarkers_query` | Genes predicting sensitivity | therapy |
-| `therapy_targets_query` | What genes a therapy targets | therapy |
-| `gene_targeting_therapies` | What therapies target a gene | gene |
-| `gene_variants_query` | Variants of a gene with evidence | gene |
-| `variant_response_query` | Specific variant + therapy response | variant, therapy |
-| `gene_overview_query` | General info about a gene | gene |
-| `therapy_overview_query` | General info about a therapy | therapy |
-| `disease_biomarkers_query` | Top biomarkers in a disease | disease |
-| `disease_therapies_query` | Therapies with evidence in a disease | disease |
+| `resistance_biomarkers_query` | Find genes whose variants predict resistance to a specific therapy | therapy |
+| `sensitivity_biomarkers_query` | Find genes whose variants predict sensitivity to a specific therapy | therapy |
+| `therapy_targets_query` | What genes a therapy targets via `TARGETS` relationships | therapy |
+| `gene_targeting_therapies_query` | What therapies target a specific gene | gene |
+| `gene_variants_query` | List variants of a gene that have clinical evidence in the database | gene |
+| `variant_response_query` | How a specific variant affects response to a specific therapy | variant, therapy |
+| `gene_overview_query` | Summary statistics about a gene (variants, targeting therapies) | gene |
+| `therapy_overview_query` | Summary statistics about a therapy (modality, target genes, biomarker associations) | therapy |
+| `disease_biomarkers_query` | Top biomarker genes for a specific disease | disease |
+| `disease_therapies_query` | Therapies with biomarker evidence in a specific disease | disease |
 | `conversational` | Greetings, thanks, off-topic chat | none |
 | `complex` | Multi-entity comparisons, exclusions, etc. | varies |
 | `unclear` | Can't determine intent | none |
@@ -74,11 +80,12 @@ The prompt should:
 - List all available intents with short descriptions
 - Instruct the LLM to extract entities and normalize obvious cases (KRAS not kras, cetuximab not Cetuximab)
 - Request JSON output matching your Pydantic model
-- Include 2-3 few-shot examples for tricky cases
+- Surface one natural-language example per intent (from `INTENT_EXAMPLES`)
+- Include 2-3 end-to-end JSON examples showing the exact `RouteResult` shape
 
 Key prompt elements:
 - System context: "You are a query router for an oncology knowledge graph"
-- Available intents list with examples
+- Available intents list with descriptions and examples
 - Entity extraction rules (gene=uppercase, therapy=lowercase)
 - Output format specification
 - Confidence guidance: 1.0 for obvious matches, lower for ambiguous
@@ -89,6 +96,46 @@ Examples:
 - "Does BRAF V600E respond to dabrafenib?" → variant_response_query, {variant: V600E, therapy: dabrafenib, gene: BRAF}
 - "Compare all EGFR inhibitors" → complex, {}
 - "Thanks!" → conversational, {}
+
+The current router prompt also includes a small block of concrete JSON output examples, for instance:
+
+```json
+User: "What genes predict resistance to trastuzumab?"
+Response JSON: {
+  "intent": "resistance_biomarkers_query",
+  "confidence": 1.0,
+  "entities": {
+    "gene": null,
+    "therapy": "trastuzumab",
+    "disease": null,
+    "variant": null
+  }
+}
+
+User: "What is KRAS?"
+Response JSON: {
+  "intent": "gene_overview_query",
+  "confidence": 1.0,
+  "entities": {
+    "gene": "KRAS",
+    "therapy": null,
+    "disease": null,
+    "variant": null
+  }
+}
+
+User: "What does erlotinib target?"
+Response JSON: {
+  "intent": "therapy_targets_query",
+  "confidence": 1.0,
+  "entities": {
+    "gene": null,
+    "therapy": "erlotinib",
+    "disease": null,
+    "variant": null
+  }
+}
+```
 
 ### 1.4 Implementation Notes
 
