@@ -230,7 +230,17 @@ Test the router against these queries (expected results in parentheses):
 
 **Goal:** Fast deterministic normalization of user-spoken entities to canonical database names.
 
-### 2.1 Index Structure
+### 2.1 Architecture Decisions
+
+**Singleton Pattern:** Use a simple global singleton with lazy initialization via `get_index()` function. This provides a clean API while remaining testable (can pass mock index to functions).
+
+**Neo4j Connection:** Reuse `Neo4jExecutor` from `src/pipeline/executor.py` to avoid code duplication.
+
+**Index Persistence:** Rebuild indexes on startup (no file caching). Query Neo4j each time the agent starts (~1-2 seconds). This ensures freshness and simplicity. Render's filesystem is ephemeral anyway, so file caching wouldn't help across deploys.
+
+**Disease Index:** Build full index from Disease nodes (not relationships) with synonyms property. Disease nodes exist in the graph but don't participate in relationships. We'll build the index and figure out the best normalization strategy as we go.
+
+### 2.2 Index Structure
 
 Build in-memory dictionaries at startup:
 
@@ -245,13 +255,13 @@ Build in-memory dictionaries at startup:
 - Example: {"cetuximab": "cetuximab", "erbitux": "cetuximab"}
 
 **diseases_index**: dict[str, str]
-- Keys: lowercase variations (name, synonyms)  
-- Values: canonical name as stored
+- Keys: lowercase variations (name, synonyms)
+- Values: canonical name as stored in database
 - Example: {"colorectal cancer": "Colorectal Carcinoma", "crc": "Colorectal Carcinoma"}
 
-### 2.2 Data Extraction Queries
+### 2.3 Data Extraction Queries
 
-Run these against Neo4j at startup:
+Run these against Neo4j at startup using `Neo4jExecutor`:
 
 **Genes:**
 ```cypher
@@ -267,53 +277,227 @@ RETURN t.name AS name, t.synonyms AS synonyms
 
 **Diseases:**
 ```cypher
-MATCH ()-[r:AFFECTS_RESPONSE_TO]->()
-RETURN DISTINCT r.disease_name AS name
+MATCH (d:Disease)
+RETURN d.name AS name, d.synonyms AS synonyms
 ```
 
-Note: Diseases don't have a dedicated node, so extract unique disease_name values from relationships.
+**Note:** Synonyms are stored as arrays in Neo4j (not semicolon-separated strings). The CSV files use semicolons, but the builder splits them into arrays during ingestion.
 
-### 2.3 Normalization Function
+### 2.4 Index Building Logic
 
-Create `normalize_entity(entity_type: str, raw: str) -> str | None`
+For each entity type, the building process:
 
-Logic:
-1. Lowercase the input
-2. Exact lookup in appropriate index
-3. If not found, return None (let Cypher CONTAINS handle fuzzy matching)
+1. Query Neo4j to get all nodes with their synonyms
+2. For each node:
+   - Add canonical name → canonical name mapping (using lowercase key)
+   - For each synonym in the synonyms array:
+     - Add synonym → canonical name mapping (using lowercase key)
+     - If synonym already maps to a different canonical name, log a warning (ambiguity detected)
+3. Store mappings in the appropriate index dictionary
 
-For diseases specifically: don't require exact match. Return the input as-is and let Cypher CONTAINS do the work. This avoids needing exhaustive disease synonym coverage.
+**Example for Genes:**
+- Query returns: `{symbol: "KRAS", synonyms: ["KRAS2", "RASK2"]}`
+- Add mappings:
+  - `"kras" → "KRAS"` (canonical symbol)
+  - `"kras2" → "KRAS"` (synonym)
+  - `"rask2" → "KRAS"` (synonym)
 
-### 2.4 Handling Ambiguity
+**Example for Therapies:**
+- Query returns: `{name: "Cetuximab", synonyms: ["Erbitux"]}`
+- Add mappings:
+  - `"cetuximab" → "cetuximab"` (canonical name, lowercase)
+  - `"erbitux" → "cetuximab"` (synonym)
 
-If a synonym maps to multiple entities (rare but possible):
-- For MVP: return the first match
-- Log a warning for later review
-- Consider: could ask user for clarification in voice ("Did you mean X or Y?")
+**Example for Diseases:**
+- Query returns: `{name: "Colorectal Carcinoma", synonyms: ["Colorectal Cancer", "CRC"]}`
+- Add mappings:
+  - `"colorectal carcinoma" → "Colorectal Carcinoma"` (canonical name, as stored)
+  - `"colorectal cancer" → "Colorectal Carcinoma"` (synonym)
+  - `"crc" → "Colorectal Carcinoma"` (synonym)
 
-### 2.5 Variant Handling
+### 2.5 EntityIndex Class Design
 
-Variants are complex. Strategy for MVP:
-- If input looks like "GENE VARIANT" (e.g., "BRAF V600E"), split and store both
-- If input is just a variant token (e.g., "V600E"), keep as-is, will need gene context
-- Don't try to normalize variants against DB — let Cypher CONTAINS handle it
+**File:** `voice_agent/entities/index.py`
 
-### 2.6 Index Persistence
+```python
+class EntityIndex:
+    """In-memory index for fast entity normalization."""
+    
+    def __init__(self, executor: Neo4jExecutor):
+        self.genes_index: dict[str, str] = {}      # lowercase -> canonical uppercase
+        self.therapies_index: dict[str, str] = {}   # lowercase -> canonical lowercase  
+        self.diseases_index: dict[str, str] = {}    # lowercase -> canonical name
+        self._build_indexes(executor)
+    
+    def _build_indexes(self, executor: Neo4jExecutor) -> None:
+        """Query Neo4j and build all three indexes."""
+        # Build genes_index
+        # Build therapies_index  
+        # Build diseases_index
+    
+    def normalize_entity(self, entity_type: str, raw: str) -> str | None:
+        """
+        Normalize an entity to its canonical form.
+        
+        Args:
+            entity_type: "gene", "therapy", "disease", or "variant"
+            raw: Raw entity string from user input
+            
+        Returns:
+            Canonical entity name, or None if not found (diseases return input as-is if not found)
+        """
+        # Lookup logic
+    
+    def normalize_entities(self, entities: ExtractedEntities) -> ExtractedEntities:
+        """
+        Normalize all entities in an ExtractedEntities object.
+        Matches the router's normalizer function signature.
+        """
+        # Wrapper that calls normalize_entity for each field
+```
 
-Options:
-1. **Rebuild on startup** — Query Neo4j each time agent starts (~1-2 seconds)
-2. **Cache to file** — Save as JSON, reload if exists, rebuild if stale
+**Global Singleton:**
+```python
+# Module-level
+_index: EntityIndex | None = None
 
-For MVP: rebuild on startup is fine. It's fast and ensures freshness.
+def get_index() -> EntityIndex:
+    """Get or create the global EntityIndex instance (lazy initialization)."""
+    global _index
+    if _index is None:
+        executor = _build_executor()  # Build from env vars
+        _index = EntityIndex(executor)
+    return _index
+```
+
+### 2.6 Normalization Function
+
+**Method:** `normalize_entity(entity_type: str, raw: str) -> str | None`
+
+**Logic:**
+1. If input is empty/None, return None
+2. Lowercase and strip the input
+3. Lookup in appropriate index based on entity_type:
+   - **gene**: Lookup in `genes_index`, return canonical uppercase symbol or None
+   - **therapy**: Lookup in `therapies_index`, return canonical lowercase name or None
+   - **disease**: Lookup in `diseases_index`, return canonical name if found, otherwise return input as-is (allows Cypher CONTAINS to handle fuzzy matching)
+   - **variant**: Return input as-is (no normalization, let Cypher CONTAINS handle it)
+4. If entity_type is unknown, log warning and return None
+
+**Special handling for diseases:** Return the input as-is if not found in index. This allows Cypher CONTAINS to handle fuzzy matching for disease names that aren't in our synonym index. We can refine this strategy later based on usage patterns.
+
+### 2.7 Variant Handling
+
+**Strategy:** No special parsing in the normalizer. The router LLM should extract entities correctly. The normalizer only does canonical name lookup.
+
+**Examples:**
+- "KRAS G12C" → Router extracts `{gene: "KRAS", variant: "G12C"}` → Normalizer normalizes gene to "KRAS", variant passes through as "G12C"
+- "G12C" → Router extracts `{variant: "G12C"}` → Normalizer passes through as-is (no normalization)
+
+**Rationale:** Variant names are complex and context-dependent. Let the router LLM handle extraction, and let Cypher CONTAINS handle matching in the database.
+
+### 2.8 Handling Ambiguity
+
+If a synonym maps to multiple canonical entities (rare but possible):
+
+**Strategy:**
+- Log a warning with both mappings: `"Ambiguous {entity_type} synonym: '{synonym}' maps to both '{canonical1}' and '{canonical2}'"`
+- Use the first match encountered (deterministic but arbitrary)
+- Future enhancement: Could return a list and let the router/query handle disambiguation, or ask user for clarification in voice
+
+**Example:**
+- If "ABC" is a synonym for both "Gene1" and "Gene2", log warning and use whichever was processed first.
+
+### 2.9 Router Integration
+
+**File:** `voice_agent/entities/__init__.py`
+
+Create a `create_normalizer()` function that matches the router's expected signature:
+
+```python
+def create_normalizer(index: EntityIndex | None = None) -> Callable[[ExtractedEntities], ExtractedEntities]:
+    """
+    Create a normalizer function matching router's expected signature.
+    
+    Args:
+        index: Optional EntityIndex instance. If None, uses global singleton.
+    
+    Returns:
+        Function that takes ExtractedEntities and returns normalized ExtractedEntities
+    """
+    idx = index or get_index()
+    
+    def normalize(entities: ExtractedEntities) -> ExtractedEntities:
+        normalized_gene = idx.normalize_entity("gene", entities.gene) if entities.gene else None
+        normalized_therapy = idx.normalize_entity("therapy", entities.therapy) if entities.therapy else None
+        normalized_disease = idx.normalize_entity("disease", entities.disease) if entities.disease else None
+        normalized_variant = entities.variant  # Pass through, no normalization
+        
+        return ExtractedEntities(
+            gene=normalized_gene,
+            therapy=normalized_therapy,
+            disease=normalized_disease,
+            variant=normalized_variant,
+        )
+    
+    return normalize
+```
+
+**Usage:**
+```python
+from voice_agent.entities import create_normalizer
+
+normalizer = create_normalizer()
+result = await router.route_query(transcript, normalizer=normalizer)
+```
+
+### 2.10 Error Handling
+
+- **Neo4j connection failure:** Raise exception (fail fast at startup)
+- **Empty results:** Indexes will be empty (log warning)
+- **Invalid entity types:** Log warning, return None
+- **Missing required env vars:** Raise RuntimeError with helpful message
+
+### 2.11 Logging
+
+Log the following:
+- Index build start/completion with timing
+- Number of entities indexed per type (genes, therapies, diseases)
+- Ambiguity warnings (synonym → multiple canonicals)
+- Build time for each index type
+- Total build time
+
+### 2.12 Testing Strategy
+
+**Unit Tests (`voice_agent/entities/test_index.py`):**
+- Mock `Neo4jExecutor` with sample data
+- Test index building with known inputs
+- Test normalization (exact matches, synonyms, not found)
+- Test ambiguity handling (synonym maps to multiple entities)
+- Test edge cases (empty synonyms, None values, etc.)
+
+**Integration Tests:**
+- Use real Neo4j connection (read-only)
+- Test index building from actual database
+- Test normalization with real entity names from the database
+- Measure and verify build time (<5 seconds target)
+- Test that indexes are populated correctly
 
 ### Done When
-- [ ] Neo4j queries written and tested
-- [ ] Index building function implemented
-- [ ] Indexes populated at startup (or cached)
-- [ ] normalize_entity function works for genes
-- [ ] normalize_entity function works for therapies
-- [ ] Diseases pass through without strict normalization
-- [ ] Index build time measured (<3 seconds acceptable)
+- [ ] `EntityIndex` class implemented in `voice_agent/entities/index.py`
+- [ ] `_build_indexes()` method implemented with three Cypher queries
+- [ ] Index building logic implemented for genes, therapies, and diseases
+- [ ] `normalize_entity()` method implemented
+- [ ] `normalize_entities()` method implemented (wrapper for router integration)
+- [ ] `get_index()` singleton getter implemented
+- [ ] `_build_executor()` helper function implemented
+- [ ] `create_normalizer()` function implemented in `voice_agent/entities/__init__.py`
+- [ ] Logging added throughout (build times, entity counts, ambiguity warnings)
+- [ ] Unit tests written with mocked Neo4jExecutor
+- [ ] Integration tests written with real Neo4j connection
+- [ ] Ambiguity handling tested and verified
+- [ ] Index build time measured and logged (<5 seconds acceptable)
+- [ ] All tests passing
 
 ---
 
@@ -773,21 +957,21 @@ voice_agent/
 │   ├── models.py          # Pydantic models (RouteResult, ExtractedEntities, etc.)
 │   ├── classifier.py      # Router LLM call
 │   └── prompts.py         # Router prompt template
-├── templates/
+├── entities/
+│   ├── __init__.py         # Export EntityIndex, get_index(), create_normalizer()
+│   └── index.py            # EntityIndex class, index building, normalization
+├── templates/              # (Stage 3 - not yet implemented)
 │   ├── __init__.py
 │   ├── models.py          # QueryTemplate dataclass
 │   ├── registry.py        # TEMPLATES dict with all 10 templates
 │   ├── cypher.py          # Template filling logic
 │   └── formatters.py      # Response formatter functions
-├── entities/
-│   ├── __init__.py
-│   ├── index.py           # Entity index building and lookup
-│   └── normalize.py       # Normalization function
-├── context.py             # ConversationContext class
-├── handler.py             # Main handle_query function
-├── db.py                  # Neo4j connection (or import from existing)
+├── context.py             # ConversationContext class (Stage 6)
+├── handler.py             # Main handle_query function (Stage 4)
 └── test_router.py         # Test script for non-voice testing
 ```
+
+**Note:** Neo4j connection is handled by reusing `Neo4jExecutor` from `src/pipeline/executor.py`. No separate `db.py` needed.
 
 ---
 
