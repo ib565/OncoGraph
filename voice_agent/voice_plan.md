@@ -14,11 +14,12 @@ This document covers implementing a fast-path query router for the OncoGraph voi
 - Pydantic models, router prompt, LLM integration, timeout handling, and tests all implemented
 - Location: `voice_agent/router/`
 
-**⏳ Stage 2: Entity Index** - NEXT TO IMPLEMENT
-- Build entity normalization indexes for genes, therapies, and diseases
-- Required before template execution
+**✅ Stage 2: Entity Index** - COMPLETE
+- Entity normalization indexes for genes, therapies, and diseases implemented
+- Singleton pattern, normalization methods, logging, and comprehensive tests all complete
+- Location: `voice_agent/entities/`
 
-**⏳ Stage 3: Template Library** - Not Started (depends on Stage 2)
+**⏳ Stage 3: Template Library** - NEXT TO IMPLEMENT (depends on Stage 2)
 - Pre-written Cypher templates for 10 query types
 
 **⏳ Stage 4: Fast Path Integration** - Not Started (depends on Stages 2 & 3)
@@ -226,7 +227,7 @@ Test the router against these queries (expected results in parentheses):
 
 ## Stage 2: Entity Index
 
-**Status:** ⏳ Not Started - Next to implement
+**Status:** ✅ COMPLETE
 
 **Goal:** Fast deterministic normalization of user-spoken entities to canonical database names.
 
@@ -484,20 +485,20 @@ Log the following:
 - Test that indexes are populated correctly
 
 ### Done When
-- [ ] `EntityIndex` class implemented in `voice_agent/entities/index.py`
-- [ ] `_build_indexes()` method implemented with three Cypher queries
-- [ ] Index building logic implemented for genes, therapies, and diseases
-- [ ] `normalize_entity()` method implemented
-- [ ] `normalize_entities()` method implemented (wrapper for router integration)
-- [ ] `get_index()` singleton getter implemented
-- [ ] `_build_executor()` helper function implemented
-- [ ] `create_normalizer()` function implemented in `voice_agent/entities/__init__.py`
-- [ ] Logging added throughout (build times, entity counts, ambiguity warnings)
-- [ ] Unit tests written with mocked Neo4jExecutor
-- [ ] Integration tests written with real Neo4j connection
-- [ ] Ambiguity handling tested and verified
-- [ ] Index build time measured and logged (<5 seconds acceptable)
-- [ ] All tests passing
+- [x] `EntityIndex` class implemented in `voice_agent/entities/index.py`
+- [x] `_build_indexes()` method implemented with three Cypher queries
+- [x] Index building logic implemented for genes, therapies, and diseases
+- [x] `normalize_entity()` method implemented
+- [x] `normalize_entities()` method implemented (wrapper for router integration)
+- [x] `get_index()` singleton getter implemented
+- [x] `_build_executor()` helper function implemented
+- [x] `create_normalizer()` function implemented in `voice_agent/entities/__init__.py`
+- [x] Logging added throughout (build times, entity counts, ambiguity warnings)
+- [x] Unit tests written with mocked Neo4jExecutor
+- [x] Integration tests written with real Neo4j connection
+- [x] Ambiguity handling tested and verified
+- [x] Index build time measured and logged (<5 seconds acceptable)
+- [x] All tests passing
 
 ---
 
