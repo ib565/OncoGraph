@@ -28,5 +28,6 @@ select = ["E", "F", "I", "B", "UP"]
 markers = [
     "asyncio: mark test as asyncio",
     "llm_integration: mark test as requiring real LLM API key",
+    "integration: mark test as integration test (requires external services like Neo4j)",
 ]
 asyncio_mode = "auto"
