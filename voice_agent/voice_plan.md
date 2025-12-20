@@ -19,10 +19,11 @@ This document covers implementing a fast-path query router for the OncoGraph voi
 - Singleton pattern, normalization methods, logging, and comprehensive tests all complete
 - Location: `voice_agent/entities/`
 
-**⏳ Stage 3: Template Library** - NEXT TO IMPLEMENT (depends on Stage 2)
+**✅ Stage 3: Template Library** - COMPLETE
 - Pre-written Cypher templates for 10 query types
+- Location: `voice_agent/templates/`
 
-**⏳ Stage 4: Fast Path Integration** - Not Started (depends on Stages 2 & 3)
+**⏳ Stage 4: Fast Path Integration** - NEXT TO IMPLEMENT (depends on Stages 2 & 3)
 - Wire router → normalization → template → Neo4j → response
 
 **⏳ Stage 5: Complex Query Fallback** - Not Started (depends on Stage 4)
@@ -504,7 +505,7 @@ Log the following:
 
 ## Stage 3: Template Library
 
-**Status:** ⏳ Not Started - Depends on Stage 2
+**Status:** ✅ COMPLETE
 
 **Goal:** Pre-written Cypher templates for the 10 supported query types.
 
@@ -742,12 +743,14 @@ Each formatter should:
 - Use entity names from input for natural phrasing
 
 ### Done When
-- [ ] QueryTemplate dataclass defined
-- [ ] All 10 templates written with Cypher
-- [ ] Cypher tested directly against Neo4j (paste in browser/CLI)
-- [ ] Response formatters written for all 10 templates
-- [ ] fill_template function works correctly
-- [ ] Edge cases handled (empty results, single result, many results)
+- [x] QueryTemplate Pydantic model defined (`voice_agent/templates/models.py`)
+- [x] All 10 templates written with Cypher (`voice_agent/templates/registry.py`)
+- [x] Cypher tested directly against Neo4j (integration tests in `voice_agent/templates/test_templates_integration.py`)
+- [x] Response formatters written for all 10 templates (`voice_agent/templates/formatters.py`)
+- [x] fill_template function works correctly (`voice_agent/templates/cypher.py`)
+- [x] Edge cases handled (empty results, single result, many results) - tested in `voice_agent/templates/test_formatters.py`)
+- [x] Cypher utilities implemented (escaping, disease tokenization) - tested in `voice_agent/templates/test_cypher.py`
+- [x] Module exports configured (`voice_agent/templates/__init__.py`)
 
 ---
 
