@@ -351,7 +351,6 @@ class TestAlternateApiKeyFallback:
 
     def test_instruction_expander_switches_key_on_rate_limit(self, monkeypatch):
         """Test that instruction expander switches keys on rate limit."""
-        from pipeline.gemini import genai
 
         # First call fails with rate limit, second succeeds
         primary_client = ExceptionStubClient([RateLimitException(), "Expanded instructions"])
@@ -384,7 +383,6 @@ class TestAlternateApiKeyFallback:
 
     def test_cypher_generator_switches_key_on_rate_limit(self, monkeypatch):
         """Test that Cypher generator switches keys on rate limit."""
-        from pipeline.gemini import genai
 
         primary_client = ExceptionStubClient([RateLimitException(), "MATCH (g:Gene) RETURN g"])
         alternate_client = ExceptionStubClient(["MATCH (g:Gene) RETURN g"])

@@ -76,7 +76,7 @@ def build_disease_filter(tokens: list[str], use_where: bool = True) -> str:
     return f"{prefix} (\n    {and_clause}\n  )"
 
 
-def fill_template(template: "QueryTemplate", entities: ExtractedEntities) -> str:
+def fill_template(template: QueryTemplate, entities: ExtractedEntities) -> str:
     """Fill a Cypher template with normalized entity values.
 
     Args:
@@ -115,4 +115,3 @@ def fill_template(template: "QueryTemplate", entities: ExtractedEntities) -> str
     cypher = cypher.replace("{disease_filter}", disease_filter)
 
     return cypher
-

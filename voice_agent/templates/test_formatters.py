@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import pytest
-
 from voice_agent.templates.formatters import (
     disease_biomarkers_formatter,
     disease_therapies_formatter,

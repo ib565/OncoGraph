@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import pytest
-
 from voice_agent.router.models import ExtractedEntities
 from voice_agent.templates.cypher import (
     _escape_cypher_literal,
