@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import sys
+
 from dotenv import load_dotenv
 
 from voice_agent.handler import handle_query

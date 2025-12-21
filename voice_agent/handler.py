@@ -5,10 +5,9 @@ import os
 import time
 from collections.abc import Callable
 
-from pipeline.gemini import GeminiConfig
 from pipeline.executor import Neo4jExecutor
+from pipeline.gemini import GeminiConfig
 from pipeline.types import PipelineError
-
 from voice_agent.entities import create_normalizer
 from voice_agent.entities.index import _build_executor
 from voice_agent.router.classifier import GeminiRouter, route_query
@@ -182,4 +181,3 @@ def _get_entity_display_name(entity_type: str) -> str:
         "variant": "variant",
     }
     return mapping.get(entity_type, entity_type)
-
