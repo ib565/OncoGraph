@@ -120,7 +120,7 @@ def test_normalize_entities_wrapper() -> None:
     assert normalized.variant == "V600E"
 
 
-def test_ambiguity_logs_warning(caplog: pytest.LogCaptureFixture) -> None:
+def test_ambiguity_logs_debug(caplog: pytest.LogCaptureFixture) -> None:
     executor = FakeExecutor(
         rows_by_cypher={
             GENES_CYPHER: [
@@ -132,10 +132,10 @@ def test_ambiguity_logs_warning(caplog: pytest.LogCaptureFixture) -> None:
         }
     )
 
-    with caplog.at_level("WARNING"):
+    with caplog.at_level("DEBUG"):
         index = EntityIndex(executor)  # type: ignore[arg-type]
 
-    # First mapping should be kept, second ignored with warning
+    # First mapping should be kept, second ignored with debug log
     assert index.genes_index["abc"] == "GENE1"
     assert any("Ambiguous gene synonym" in record.getMessage() for record in caplog.records)
 

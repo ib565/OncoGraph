@@ -142,7 +142,8 @@ class EntityIndex:
         index = self._get_index_for_type(entity_type)
         existing = index.get(key)
         if existing is not None and existing != canonical:
-            logger.warning(
+            # Log at DEBUG level since this is expected behavior - we keep the first mapping
+            logger.debug(
                 "Ambiguous %s synonym",
                 entity_type,
                 extra={"synonym": key, "canonical_existing": existing, "canonical_new": canonical},
