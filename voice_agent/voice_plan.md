@@ -1,12 +1,18 @@
-# OncoGraph Voice Router - Implementation Guide
+# OncoGraph Voice Agent - Complete Implementation Plan
 
 ## Note
 
-This is a rough plan. Feel free to deviate from it and suggest improvements and changes.
+This document provides a comprehensive implementation plan for the OncoGraph voice AI agent. The plan is structured in stages, with each stage building on the previous ones. Feel free to deviate from it and suggest improvements and changes.
 
 ## Overview
 
-This document covers implementing a fast-path query router for the OncoGraph voice AI agent. The router classifies natural language queries, extracts entities, matches to pre-written Cypher templates, and returns voice-friendly responses.
+This document covers the complete implementation of the OncoGraph voice AI agent, from the initial fast-path query router through to the full voice-enabled system. The agent uses a two-tier architecture:
+
+1. **Fast-Path Query Engine** (Stages 1-5): A specialized tool that classifies natural language queries, extracts entities, matches to pre-written Cypher templates, executes queries against Neo4j, and returns structured JSON payloads optimized for voice output.
+
+2. **Conversational Agent** (Stage 6+): A Gemini Flash-powered conversational agent that handles greetings, clarifications, and natural language generation, calling the fast-path tool when graph queries are needed.
+
+The system is designed for low latency (<2 seconds for template-matched queries) and voice-friendly responses (1-3 sentences, top N items, natural phrasing).
 
 ## Current Progress
 
@@ -29,19 +35,29 @@ This document covers implementing a fast-path query router for the OncoGraph voi
 - Singleton executor pattern, latency tracking, and test CLI script all complete
 - Location: `voice_agent/handler.py`, `voice_agent/test_handler_cli.py`
 
-**⏳ Stage 5: Complex Query Fallback** - Not Started (depends on Stage 4)
-- Handle conversational, complex, and unclear intents
+**⏳ Stage 5: Convert Fast Path to a Tool** - Not Started
+- Refactor handler to return structured `OncoGraphToolResult` with intent-specific payloads
+- Convert formatters from string generators to payload builders
+- Update all templates and tests to use new payload structure
+- Location: `voice_agent/contracts.py`, `voice_agent/handler.py`, `voice_agent/templates/formatters.py`
 
-**⏳ Stage 6: Conversation Context** - Not Started (depends on Stage 4)
-- Handle follow-up queries with context
+**⏳ Stage 6: Wire in LiveKit (Voice MVP)** - Not Started
+- Integrate LiveKit agent framework
+- Connect Gemini Flash as conversational LLM
+- Register OncoGraph tool for function calling
+- Add Deepgram STT and Cartesia TTS
+
+
 
 ### Target Latency
 - Template-matched queries: <2 seconds end-to-end
 - Complex queries (fallback): acknowledge immediately, process in background
 
-### Pipeline
+### Architecture Pipeline
+
+**Fast-Path Tool (Stages 1-5):**
 ```
-User text
+User query (natural language)
     ↓
 Intent + Entity Extraction (LLM, structured output)
     ↓
@@ -49,11 +65,28 @@ Entity Normalization (deterministic + fuzzy fallback)
     ↓
 Template Selection + Fill
     ↓
-Cypher Execution
+Cypher Execution (Neo4j)
     ↓
-Response Formatting
+Payload Building (structured JSON)
     ↓
-Return to conversation agent
+Return OncoGraphToolResult to conversational agent
+```
+
+**Full Voice System (Stage 6+):**
+```
+User speech (LiveKit)
+    ↓
+Speech-to-Text (Deepgram)
+    ↓
+Conversational Agent (Gemini Flash)
+    ↓
+[If graph query needed] → Fast-Path Tool → Structured payload
+    ↓
+Natural Language Generation (Gemini Flash)
+    ↓
+Text-to-Speech (Cartesia)
+    ↓
+User hears response
 ```
 
 ---
@@ -845,116 +878,623 @@ Test all 10 template types plus edge cases before adding voice.
 
 ---
 
-## Stage 5: Complex Query Fallback
+## Stage 5: Convert Fast Path to a Tool (Structured, Intent-Specific Output)
 
-**Status:** ⏳ Not Started - Depends on Stage 4
+**Status:** ⏳ Not Started
 
-**Goal:** Gracefully handle queries that don't match templates.
+**Goal:** Make your existing router/templates/Neo4j executor callable as a single **tool** that returns small, intent-specific structured JSON. Gemini Flash (the conversational agent) decides when to call it and how to speak.
 
-### 5.1 Fallback Triggers
+### 5.1 New Responsibility Split
 
-Route to fallback when:
-- `intent == "complex"`
-- `intent == "unclear"`
-- `confidence < 0.6`
-- Required entities missing and can't prompt for them
+- **Gemini Flash (conversation brain)**:
+  - greetings, thanks, off-topic
+  - clarifying questions
+  - choosing when to call the tool
+  - speaking results in 1–3 sentences
 
-### 5.2 Conversational Intent
+- **OncoGraph tool (fast path engine)**:
+  - routing → normalization → template execution → result reduction
+  - returns **structured data only**
+  - no "conversation", no long text generation
 
-For `intent == "conversational"`:
-- "Hello" / "Hi" → "Hi! I'm OncoGraph. Ask me about cancer biomarkers, therapies, or resistance mechanisms."
-- "Thanks" / "Thank you" → "You're welcome! Anything else?"
-- "Goodbye" / "Bye" → "Goodbye! Feel free to come back anytime."
-- Off-topic → "I'm specialized in oncology research. I can help with biomarkers, therapies, and drug resistance."
+### 5.2 Tool Contract: Discriminated Union (Pydantic)
 
-Use a simple keyword/pattern match or let the router LLM handle sub-classification.
+Use `intent` as the discriminator so the LLM sees a predictable schema and your code stays type-safe.
 
-### 5.3 Complex Query Handling
+#### 5.2.1 Core Models (`voice_agent/contracts.py`)
 
-For genuinely complex queries that need full pipeline:
+**File:** `voice_agent/contracts.py` (NEW FILE)
 
-Response pattern:
-"That's a complex question that needs more analysis. I'll have results ready in the web dashboard in about a minute. Is there something simpler I can help with now?"
+```python
+from pydantic import BaseModel, Field
+from typing import Literal, Optional, Union, Annotated
+from voice_agent.router.models import ExtractedEntities  # Reuse existing model
 
-Implementation:
-- Return acknowledgment immediately
-- (Optional) Trigger background job to your existing FastAPI pipeline
-- (Optional) Store result somewhere user can access
+Status = Literal[
+    "ok",
+    "needs_clarification",
+    "no_results",
+    "not_supported",
+    "error",
+]
 
-For MVP: just return the acknowledgment. Don't implement background processing yet.
+# Reuse ExtractedEntities from router/models.py as NormalizedEntities
+NormalizedEntities = ExtractedEntities
 
-### 5.4 Unclear Intent
+class VoiceHint(BaseModel):
+    """Hints for voice output formatting."""
+    speak_top_n: int = Field(default=3, ge=1, le=10)
 
-When router can't classify:
-"I'm not sure I understood that. You can ask me things like 'What causes resistance to cetuximab?' or 'What therapies target BRAF?'"
+# Note: No ask_followup or avoid fields - LLM decides follow-ups, 
+# and we simply don't include fields we don't want in payloads
+```
+
+#### 5.2.2 Intent-Specific Payload Models
+
+All payloads follow this pattern:
+- `intent: Literal["..."]` as first field (discriminator)
+- Entity names (therapy, gene, disease, variant) when relevant
+- `total_*` count field
+- `top_*` or `*_list` field with bounded items (3-5 max)
+- Evidence levels and counts where applicable
+
+**1. ResistanceBiomarkersPayload**
+```python
+class ResistanceBiomarkersPayload(BaseModel):
+    intent: Literal["resistance_biomarkers_query"]
+    therapy: str
+    disease: Optional[str] = None  # If provided in query
+    total_genes: int
+    top_genes: list[dict[str, Union[str, int, None]]] = Field(
+        default_factory=list,
+        max_length=5
+    )
+    # top_genes items: {"gene": str, "best_level": str | None, "evidence_count": int}
+```
+
+**2. SensitivityBiomarkersPayload**
+```python
+class SensitivityBiomarkersPayload(BaseModel):
+    intent: Literal["sensitivity_biomarkers_query"]
+    therapy: str
+    disease: Optional[str] = None  # If provided in query
+    total_genes: int
+    top_genes: list[dict[str, Union[str, int, None]]] = Field(
+        default_factory=list,
+        max_length=5
+    )
+    # top_genes items: {"gene": str, "best_level": str | None, "evidence_count": int}
+```
+
+**3. TherapyTargetsPayload**
+```python
+class TherapyTargetsPayload(BaseModel):
+    intent: Literal["therapy_targets_query"]
+    therapy: str
+    modality: Optional[str] = None  # From therapy node
+    total_targets: int
+    targets: list[dict[str, Optional[str]]] = Field(
+        default_factory=list,
+        max_length=5
+    )
+    # targets items: {"gene": str, "moa": str | None}
+```
+
+**4. GeneTargetingTherapiesPayload**
+```python
+class GeneTargetingTherapiesPayload(BaseModel):
+    intent: Literal["gene_targeting_therapies_query"]
+    gene: str
+    total_therapies: int
+    therapies: list[dict[str, Optional[str]]] = Field(
+        default_factory=list,
+        max_length=5
+    )
+    # therapies items: {"therapy": str, "moa": str | None, "modality": str | None}
+```
+
+**5. GeneVariantsPayload**
+```python
+class GeneVariantsPayload(BaseModel):
+    intent: Literal["gene_variants_query"]
+    gene: str
+    total_variants: int
+    top_variants: list[dict[str, Union[str, int, None]]] = Field(
+        default_factory=list,
+        max_length=5
+    )
+    # top_variants items: {"variant": str, "best_level": str | None, "evidence_count": int}
+```
+
+**6. VariantResponsePayload**
+```python
+class VariantResponsePayload(BaseModel):
+    intent: Literal["variant_response_query"]
+    variant: str
+    therapy: str
+    results: list[dict[str, Union[str, int, None]]] = Field(
+        default_factory=list,
+        max_length=5
+    )
+    # results items: {"effect": "sensitivity" | "resistance", "disease": str | None, 
+    #                 "best_level": str | None, "evidence_count": int}
+    # Note: Can mix sensitivity and resistance in same list
+```
+
+**7. GeneOverviewPayload**
+```python
+class GeneOverviewPayload(BaseModel):
+    intent: Literal["gene_overview_query"]
+    gene: str
+    variant_count: int
+    therapy_count: int
+    # Note: Single object, not a list (query returns one row)
+```
+
+**8. TherapyOverviewPayload**
+```python
+class TherapyOverviewPayload(BaseModel):
+    intent: Literal["therapy_overview_query"]
+    therapy: str
+    modality: Optional[str] = None
+    target_count: int
+    biomarker_count: int
+    targets: list[dict[str, Optional[str]]] = Field(
+        default_factory=list,
+        max_length=5
+    )
+    # targets items: {"gene": str, "moa": str | None}
+    # Note: Includes targets list (like therapy_targets_query)
+```
+
+**9. DiseaseBiomarkersPayload**
+```python
+class DiseaseBiomarkersPayload(BaseModel):
+    intent: Literal["disease_biomarkers_query"]
+    disease: str
+    total_genes: int
+    top_genes: list[dict[str, Union[str, int, None]]] = Field(
+        default_factory=list,
+        max_length=5
+    )
+    # top_genes items: {"gene": str, "best_level": str | None, "evidence_count": int}
+```
+
+**10. DiseaseTherapiesPayload**
+```python
+class DiseaseTherapiesPayload(BaseModel):
+    intent: Literal["disease_therapies_query"]
+    disease: str
+    total_therapies: int
+    therapies: list[dict[str, int]] = Field(
+        default_factory=list,
+        max_length=5
+    )
+    # therapies items: {"therapy": str, "evidence_count": int}
+```
+
+#### 5.2.3 Discriminated Union and Result Model
+
+```python
+Payload = Annotated[
+    Union[
+        ResistanceBiomarkersPayload,
+        SensitivityBiomarkersPayload,
+        TherapyTargetsPayload,
+        GeneTargetingTherapiesPayload,
+        GeneVariantsPayload,
+        VariantResponsePayload,
+        GeneOverviewPayload,
+        TherapyOverviewPayload,
+        DiseaseBiomarkersPayload,
+        DiseaseTherapiesPayload,
+    ],
+    Field(discriminator="intent"),
+]
+
+class OncoGraphToolResult(BaseModel):
+    """Structured result from OncoGraph query tool."""
+    status: Status
+    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+    entities: NormalizedEntities = Field(default_factory=NormalizedEntities)
+    message: Optional[str] = None  # User-safe message for non-ok statuses
+    voice: VoiceHint = Field(default_factory=VoiceHint)
+    payload: Optional[Payload] = None  # Present when status="ok"
+```
+
+**Key Design Decisions:**
+- Reuse `ExtractedEntities` from `router/models.py` instead of duplicating
+- `VoiceHint` only contains `speak_top_n` (no `ask_followup`, no `avoid` field)
+- Payloads are bounded (max 5 items in lists) to keep responses small
+- Evidence levels stored as strings ("A", "B", "C", etc.) or None
+- Effect types are literal strings: "sensitivity" or "resistance"
+
+### 5.3 Update `handle_query` Function
+
+**File:** `voice_agent/handler.py`
+
+**Changes:**
+- Return type: `str` → `OncoGraphToolResult`
+- Remove `debug` parameter (not implementing debug mode)
+- Add `speak_top_n: int = 3` parameter (configurable, defaults to 3)
+- Pass `speak_top_n` to payload builders
+
+**Status Mapping Rules:**
+
+| Condition | Status | Message |
+|-----------|--------|---------|
+| Router confidence < 0.6 | `needs_clarification` | "I'm not sure what you're asking. Could you rephrase that?" |
+| Missing required entity | `needs_clarification` | "I need to know the {entity_type}. Which {entity_display} are you asking about?" |
+| Intent = "conversational" | `not_supported` | "Hi! I'm OncoGraph. Ask me about cancer biomarkers, therapies, or resistance mechanisms." |
+| Intent = "complex" | `not_supported` | "That's a complex question that needs more analysis. I'll have results ready in the web dashboard in about a minute. Is there something simpler I can help with now?" |
+| Intent = "unclear" | `not_supported` | "I'm not sure I understood that. You can ask me things like 'What causes resistance to cetuximab?' or 'What therapies target BRAF?'" |
+| Template not found | `error` | "I ran into a problem processing your query. Could you try asking differently?" |
+| Cypher execution error | `error` | "I ran into a problem looking that up. Could you try asking differently?" |
+| Empty results (formatter returns None) | `no_results` | Message from formatter (e.g., "I didn't find resistance biomarkers for {therapy}.") |
+| Success with results | `ok` | None (payload contains data) |
+
+**Implementation Flow:**
+1. Router call → get `RouteResult`
+2. Check confidence → return `needs_clarification` if low
+3. Handle special intents (`conversational`, `complex`, `unclear`) → return `not_supported`
+4. Template lookup → return `error` if not found
+5. Entity validation → return `needs_clarification` if missing
+6. Template filling → return `error` if fails
+7. Cypher execution → return `error` if fails
+8. Payload building → call formatter with `speak_top_n`
+9. Build `OncoGraphToolResult`:
+   - Set `status` based on conditions above
+   - Set `confidence` from router result
+   - Set `entities` from normalized router entities
+   - Set `message` for non-ok statuses
+   - Set `voice.speak_top_n` from parameter
+   - Set `payload` when status is `ok` and formatter returns payload
+   - Return `no_results` if formatter returns None
+
+### 5.4 Refactor Formatters to Payload Builders
+
+**File:** `voice_agent/templates/formatters.py`
+
+**Changes:**
+- **Remove:** All string-returning formatter functions
+- **Remove:** Helper functions `_number_to_word()`, `_get_evidence_level_text()`, `_format_gene_list()` (not needed for structured data)
+- **Keep:** `_clean_value()` helper (still useful for extracting values from Neo4j results)
+- **Add:** 10 new payload builder functions
+
+**Payload Builder Function Signatures:**
+
+```python
+def build_resistance_biomarkers_payload(
+    results: list[dict[str, object]],
+    entities: dict[str, str | None],
+    speak_top_n: int = 3,
+) -> ResistanceBiomarkersPayload | None:
+    """Build payload for resistance biomarkers query. Returns None if no results."""
+
+def build_sensitivity_biomarkers_payload(
+    results: list[dict[str, object]],
+    entities: dict[str, str | None],
+    speak_top_n: int = 3,
+) -> SensitivityBiomarkersPayload | None:
+    """Build payload for sensitivity biomarkers query. Returns None if no results."""
+
+def build_therapy_targets_payload(
+    results: list[dict[str, object]],
+    entities: dict[str, str | None],
+    speak_top_n: int = 3,
+) -> TherapyTargetsPayload | None:
+    """Build payload for therapy targets query. Returns None if no results."""
+
+def build_gene_targeting_therapies_payload(
+    results: list[dict[str, object]],
+    entities: dict[str, str | None],
+    speak_top_n: int = 3,
+) -> GeneTargetingTherapiesPayload | None:
+    """Build payload for gene targeting therapies query. Returns None if no results."""
+
+def build_gene_variants_payload(
+    results: list[dict[str, object]],
+    entities: dict[str, str | None],
+    speak_top_n: int = 3,
+) -> GeneVariantsPayload | None:
+    """Build payload for gene variants query. Returns None if no results."""
+
+def build_variant_response_payload(
+    results: list[dict[str, object]],
+    entities: dict[str, str | None],
+    speak_top_n: int = 3,
+) -> VariantResponsePayload | None:
+    """Build payload for variant response query. Returns None if no results."""
+
+def build_gene_overview_payload(
+    results: list[dict[str, object]],
+    entities: dict[str, str | None],
+    speak_top_n: int = 3,
+) -> GeneOverviewPayload | None:
+    """Build payload for gene overview query. Returns None if gene not found."""
+
+def build_therapy_overview_payload(
+    results: list[dict[str, object]],
+    entities: dict[str, str | None],
+    speak_top_n: int = 3,
+) -> TherapyOverviewPayload | None:
+    """Build payload for therapy overview query. Returns None if therapy not found."""
+
+def build_disease_biomarkers_payload(
+    results: list[dict[str, object]],
+    entities: dict[str, str | None],
+    speak_top_n: int = 3,
+) -> DiseaseBiomarkersPayload | None:
+    """Build payload for disease biomarkers query. Returns None if no results."""
+
+def build_disease_therapies_payload(
+    results: list[dict[str, object]],
+    entities: dict[str, str | None],
+    speak_top_n: int = 3,
+) -> DiseaseTherapiesPayload | None:
+    """Build payload for disease therapies query. Returns None if no results."""
+```
+
+**Payload Builder Logic:**
+1. Check if results are empty → return `None`
+2. Extract entity names from `entities` dict (therapy, gene, disease, variant)
+3. Extract data from Neo4j results:
+   - For list payloads: extract top N items (bounded by `speak_top_n`, max 5)
+   - For single-object payloads: extract single row
+4. Build structured payload objects:
+   - Set `intent` field
+   - Set entity names (therapy, gene, disease, variant)
+   - Set `total_*` count
+   - Set `top_*` or `*_list` with bounded items
+   - Extract evidence levels and counts where applicable
+5. Return payload model instance, or `None` if no results
+
+**Special Cases:**
+- `gene_overview_query` and `therapy_overview_query`: Check if gene/therapy exists (results empty or counts are 0) → return `None`
+- `variant_response_query`: Can have both sensitivity and resistance results in same list
+- `therapy_overview_query`: Include `targets` list (like `therapy_targets_query`)
+
+### 5.5 Update Template Registry
+
+**File:** `voice_agent/templates/registry.py`
+
+**Changes:**
+- Update all template definitions to use new payload builders
+- Update `format_response` references from old formatters to new payload builders
+
+**File:** `voice_agent/templates/models.py`
+
+**Changes:**
+- Update `QueryTemplate.format_response` type signature:
+  - From: `Callable[[list[dict[str, object]], dict[str, str | None], int], str]`
+  - To: `Callable[[list[dict[str, object]], dict[str, str | None], int], BaseModel | None]`
+
+### 5.6 Update Test CLI
+
+**File:** `voice_agent/test_handler_cli.py`
+
+**Changes:**
+- Update to print JSON output: `result.model_dump_json(indent=2)`
+- Add `--speak-top-n` argument (default 3)
+- Pretty print JSON for readability
+- Update error handling to work with `OncoGraphToolResult`
+
+**Example Output:**
+```json
+{
+  "status": "ok",
+  "confidence": 1.0,
+  "entities": {
+    "gene": null,
+    "therapy": "cetuximab",
+    "disease": null,
+    "variant": null
+  },
+  "message": null,
+  "voice": {
+    "speak_top_n": 3
+  },
+  "payload": {
+    "intent": "resistance_biomarkers_query",
+    "therapy": "cetuximab",
+    "disease": null,
+    "total_genes": 5,
+    "top_genes": [
+      {"gene": "KRAS", "best_level": "A", "evidence_count": 88},
+      {"gene": "BRAF", "best_level": "B", "evidence_count": 45},
+      {"gene": "PIK3CA", "best_level": "C", "evidence_count": 23}
+    ]
+  }
+}
+```
+
+### 5.7 Update Tests
+
+**File:** `voice_agent/templates/test_formatters.py`
+
+**Changes:**
+- Remove tests for old string formatters
+- Add tests for all 10 payload builders:
+  - Test with sample Neo4j results
+  - Test empty results (returns None)
+  - Test `speak_top_n` limiting (max 5 items)
+  - Test evidence level extraction
+  - Test entity name extraction from entities dict
+
+**File:** `voice_agent/test_handler_cli.py` (if tests exist)
+
+**Changes:**
+- Update to expect `OncoGraphToolResult` instead of string
+- Test status mapping for all error cases
+- Test success path with all 10 query types
+
+### 5.8 Gemini Flash Agent Prompt (System Instruction Snippet)
+
+This is the "policy" that makes voice feel good. (To be implemented in Stage 6)
+
+```text
+You are OncoGraph, a voice assistant for oncology research using a curated knowledge graph.
+
+Use the oncograph_query tool when the user asks about:
+- resistance or sensitivity biomarkers for a therapy
+- what a therapy targets, or what therapies target a gene
+- variant response evidence (variant vs therapy)
+- disease-specific top biomarkers or therapies with evidence
+- gene or therapy overview in the database
+
+Do NOT read PMIDs, URLs, or Cypher aloud.
+
+Speaking style:
+- 1 to 3 sentences.
+- If there are many items, name the top three and say "and X others."
+- Mention evidence level only when A or B appears.
+- Ask one short follow-up question when helpful.
+
+If the tool returns needs_clarification, ask exactly one clarifying question.
+
+If the user asks for pathway enrichment, say it is not available in voice mode and offer a supported query type instead.
+
+This is for research/education only, not medical advice.
+```
+
+### 5.9 Tool Description Snippet (what Gemini sees)
+
+```text
+Tool: oncograph_query
+Description:
+Query the OncoGraph knowledge graph (Neo4j) for oncology biomarkers, therapy targets,
+variant response evidence, and disease-specific evidence. Returns a small structured
+result with counts and top items.
+
+Input:
+- query: natural language question
+
+Output:
+- status: ok | needs_clarification | no_results | not_supported | error
+- entities: normalized gene/therapy/disease/variant (when available)
+- payload: intent-specific structured data (top results only)
+- message: short user-safe message for non-ok outcomes
+```
 
 ### Done When
-- [ ] Conversational responses implemented
-- [ ] Complex query acknowledgment implemented
-- [ ] Unclear intent handled with helpful suggestions
-- [ ] All fallback paths tested
+- [ ] `voice_agent/contracts.py` created with all Pydantic models (Status, VoiceHint, 10 payload models, Payload union, OncoGraphToolResult)
+- [ ] All 10 payload builder functions implemented in `voice_agent/templates/formatters.py`
+- [ ] Old string formatters removed from `voice_agent/templates/formatters.py`
+- [ ] `QueryTemplate.format_response` type signature updated in `voice_agent/templates/models.py`
+- [ ] All templates updated in `voice_agent/templates/registry.py` to use new payload builders
+- [ ] `handle_query` updated to return `OncoGraphToolResult` with correct status mapping
+- [ ] `handle_query` accepts `speak_top_n` parameter and passes it to payload builders
+- [ ] Test CLI updated to print JSON output with `--speak-top-n` argument
+- [ ] All formatter tests updated to test payload builders
+- [ ] Handler tests updated to expect `OncoGraphToolResult`
+- [ ] All 10 query types tested end-to-end and return correct payloads
+- [ ] Error cases tested (low confidence, missing entities, empty results, Cypher errors)
+
 
 ---
 
-## Stage 6: Conversation Context
+## Stage 6: Wire in LiveKit (Voice MVP)
 
-**Status:** ⏳ Not Started - Depends on Stage 4
+**Goal:** Put the “Gemini Flash + tool” loop behind real-time voice (Deepgram STT, Cartesia TTS).
 
-**Goal:** Handle follow-up queries that reference previous results.
+### 6.1 Minimal Voice Architecture
 
-### 6.1 Context Data Structure
+- LiveKit Agent runs the conversation loop.
+- Gemini Flash is the conversational LLM.
+- `oncograph_query` is registered as a callable tool.
 
-Create `ConversationContext` class:
-- `last_genes`: list[str] | None — genes from last query result
-- `last_therapies`: list[str] | None — therapies from last query result
-- `last_disease`: str | None — disease context if mentioned
-- `last_query_type`: str | None — template ID of last query
-- `turn_count`: int — for tracking conversation length
+**Critical MVP behavior:**
+- The agent should *not* call the tool for greetings/thanks.
+- The agent should call the tool for graph questions.
+- If a tool call will happen, the agent should acknowledge quickly (prompt-driven is fine for MVP).
 
-### 6.2 Context Updates
+### 6.2 Voice UX Guardrails
 
-After each successful query:
-- Extract genes/therapies/disease from results
-- Store in context
-- Increment turn count
+- If STT produces uncertain entity strings (common with drug names):
+  - let the tool attempt normalization
+  - if tool returns `needs_clarification`, ask: “Which therapy did you mean?” (single question)
+- Don’t dump lists; always top 3 + “and others.”
 
-### 6.3 Reference Resolution
+### 6.3 Logging (server-side)
 
-Before routing, check for references in transcript:
-- "those genes" / "these genes" / "them" → substitute `context.last_genes`
-- "that therapy" / "this drug" → substitute `context.last_therapies[0]`
-- "run enrichment" / "pathway analysis" → trigger enrichment with `context.last_genes`
+Log per turn:
+- transcript text
+- tool status/intent/confidence/entities
+- Neo4j execution time
+- end-to-end tool time (for you)
 
-Implementation options:
-1. **Pre-process transcript** — regex/keyword replacement before routing
-2. **Include context in router prompt** — let LLM resolve references
-3. **Post-process entities** — if entity is None but reference detected, fill from context
-
-For MVP: Option 1 or 3 is simpler. Avoid making router prompt too complex.
-
-### 6.4 Enrichment Flow
-
-When user says "run enrichment" / "pathway analysis" / "what pathways":
-- Check `context.last_genes` exists and has 3+ genes
-- If yes: could call your existing enrichment endpoint
-- Return: "Running pathway enrichment on {N} genes... The top pathway is {X} with p-value {Y}."
-
-For MVP: acknowledge the intent, suggest using web app
-"I found these genes: X, Y, Z. For pathway enrichment, check the web dashboard — the results are ready to analyze there."
-
-### 6.5 Context Reset
-
-Reset context when:
-- User starts completely new topic (different entity types)
-- User explicitly asks to start over
-- Conversation idle for extended period (if tracking)
+Again: **do not return these logs to Gemini**.
 
 ### Done When
-- [ ] ConversationContext class implemented
-- [ ] Context updated after each query
-- [ ] "those genes" / "that therapy" references resolved
-- [ ] Enrichment intent recognized
-- [ ] Context passed through handle_query correctly
+- [ ] You can join a LiveKit room and ask at least one query per template type by voice
+- [ ] Latency feels okay (fast path <2s, otherwise short acknowledgement)
+- [ ] Clarifications work naturally via Gemini + tool status
+
+
+---
+
+## Stage 7: Conversation Context (Lean, No Enrichment)
+
+**Goal:** Improve follow-ups (“those genes”, “that therapy”) without building heavy infra.
+
+### 7.1 Minimal State (Agent-side)
+
+Store the last successful tool payload in memory:
+- last intent
+- last entities
+- last top items (genes/therapies/variants)
+- last disease if present
+
+This is optional because Gemini has chat history, but it helps reliability if you later truncate tool outputs.
+
+### 7.2 Prompt Add-on
+
+```text
+If the user says “those genes/that therapy/that variant,” use the most recent tool result.
+If it’s ambiguous, ask one clarifying question.
+```
+
+### Done When
+- [ ] “those genes” references work in 2–3 turn demos
+- [ ] Ambiguity triggers one question, not a cascade
+
+
+---
+
+## Stage 8: Deploy Voice Worker (Demo-Ready)
+
+**Goal:** Always-on agent worker + LiveKit Cloud so you can demo reliably.
+
+### Deployment checklist
+- agent worker does not sleep aggressively
+- builds entity index at startup
+- health check verifies Neo4j connectivity
+- env var management for keys
+- timeouts enforced so voice never hangs
+
+### Done When
+- [ ] You can demo from a fresh browser session without running code locally
+
+
+---
+
+## Stage 9: Demo Polish (Recruiter “Wow”)
+
+**Goal:** Crisp, predictable demo.
+
+- Script 6–8 canonical voice queries (one per template type)
+- Add “fallback examples”:
+  - enrichment request (refusal)
+  - complex comparison (not_supported)
+  - misheard entity (needs_clarification)
+- Add README section:
+  - architecture diagram (voice loop + tool)
+  - template list
+  - limitations
+
+### Done When
+- [ ] 2-minute demo is repeatable and robust
+- [ ] Logs show stable latency and successful routing
 
 ---
 
