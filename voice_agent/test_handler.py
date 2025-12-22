@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
 from types import SimpleNamespace
-from typing import Callable
 
 import pytest
 
@@ -130,6 +130,6 @@ async def test_ok_status_with_payload() -> None:
     assert result.status == "ok"
     assert result.payload is not None
     assert result.payload.intent == "therapy_targets_query"
-    assert getattr(result.payload, "therapy") == "cetuximab"
-    assert len(getattr(result.payload, "targets")) == 1
+    assert result.payload.therapy == "cetuximab"
+    assert len(result.payload.targets) == 1
 
