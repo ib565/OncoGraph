@@ -1393,35 +1393,95 @@ Output:
 
 ## Stage 6: Wire in LiveKit (Voice MVP)
 
-**Goal:** Put the “Gemini Flash + tool” loop behind real-time voice (Deepgram STT, Cartesia TTS).
+**Goal:** Put the “Gemini Flash + oncograph_query tool” loop behind realtime voice using LiveKit Agents, LiveKit Cloud, and LiveKit Inference (Gemini LLM, Deepgram STT, Cartesia TTS).
 
-### 6.1 Minimal Voice Architecture
+### 6.1 Architecture & Hosting (LiveKit Cloud + direct Neo4j)
 
-- LiveKit Agent runs the conversation loop.
-- Gemini Flash is the conversational LLM.
-- `oncograph_query` is registered as a callable tool.
+- **Agent hosting:** Run the voice agent as a **LiveKit Agent** deployed on **LiveKit Cloud** (no self-hosted SFU for MVP).
+- **Code location:** Package the existing `voice_agent` Python package (router, entities, templates, `handler.py`, `contracts.py`) into the agent container so all tool logic runs **inside** the agent.
+- **Database access:** The agent connects **directly to Neo4j** using the existing `Neo4jExecutor` and env vars (same as Render), over the public network.
+  - Configure `NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD` (and any other required vars) as **LiveKit Cloud secrets** for the agent deployment.
+  - Ensure Neo4j is reachable from LiveKit Cloud (public endpoint or firewall rules that allow Cloud IP ranges).
+- **Frontend:** For Stage 6, no custom frontend is required; use the LiveKit **Agent Playground / Voice AI quickstart UI** to join a room and talk to the agent.
 
-**Critical MVP behavior:**
-- The agent should *not* call the tool for greetings/thanks.
-- The agent should call the tool for graph questions.
-- If a tool call will happen, the agent should acknowledge quickly (prompt-driven is fine for MVP).
+This matches LiveKit’s standard model: the agent is a normal Python process (on LiveKit Cloud) that can call any Python code and talk to external services (like Neo4j) over the network.
 
-### 6.2 Voice UX Guardrails
+### 6.2 Models: Gemini LLM + Deepgram STT + Cartesia TTS via LiveKit Inference
 
-- If STT produces uncertain entity strings (common with drug names):
-  - let the tool attempt normalization
-  - if tool returns `needs_clarification`, ask: “Which therapy did you mean?” (single question)
-- Don’t dump lists; always top 3 + “and others.”
+- Use **LiveKit Inference** to simplify model wiring for MVP (can later swap to provider plugins if needed).
+- **LLM (Gemini):**
+  - Configure Gemini (e.g., Gemini Flash) as the conversational LLM in the agent’s LLM config, served via LiveKit Inference.
+  - Provide the Stage 5.8/5.9-style **system prompt** that describes:
+    - OncoGraph’s capabilities and tool usage.
+    - Voice style (1–3 sentences, top 3 items, evidence A/B only, no PMIDs/URLs).
+    - Status handling (`ok`, `needs_clarification`, `no_results`, `not_supported`, `error`).
+- **STT (Deepgram):**
+  - Configure Deepgram as the STT model via LiveKit Inference (preferred) or the Deepgram STT plugin.
+  - Set language (e.g. `en`) and a high-accuracy model (e.g. Nova 3) tuned for medical-ish terminology.
+- **TTS (Cartesia):**
+  - Configure Cartesia TTS via LiveKit Inference (preferred) or Cartesia TTS plugin.
+  - Choose a default Cartesia voice (clear, neutral, professional) and keep speaking rate natural.
+- **Migration path:** If LiveKit Inference free usage is not sufficient, swap the model configs to use the Gemini, Deepgram, and Cartesia **plugins** with your own provider keys, without changing `oncograph_query` or Neo4j logic.
 
-### 6.3 Logging (server-side)
+### 6.3 Agent Server Entrypoint & Session Setup
 
-Log per turn:
-- transcript text
-- tool status/intent/confidence/entities
-- Neo4j execution time
-- end-to-end tool time (for you)
+- Create `voice_agent/voice_server.py` with:
+  - An `AgentServer` instance configured for LiveKit Cloud deployment (per LiveKit Agents docs).
+  - A `@server.rtc_session()`-decorated function that:
+    - Creates an `AgentSession` wired to:
+      - Gemini LLM (Inference).
+      - Deepgram STT (Inference).
+      - Cartesia TTS (Inference).
+    - Sets the **system instructions** (Stage 5.8/5.9 prompt) on the LLM node.
+    - Registers the `oncograph_query` tool (see 6.4).
+    - Enables default turn detection and interruption behavior (no extra tuning needed for MVP).
+- The agent session should join a room as an **agent participant**, listen for audio, and speak replies using the configured models.
 
-Again: **do not return these logs to Gemini**.
+### 6.4 `oncograph_query` Tool Definition
+
+- Define a tool in `voice_agent/tools.py` (or alongside `voice_server.py`) using LiveKit’s `@function_tool` decorator:
+  - **Signature:** `async def oncograph_query(query: str) -> dict:`
+  - **Behavior:**
+    - Calls `result = await handle_query(query, speak_top_n=3)` from `voice_agent/handler.py`.
+    - `handle_query` returns `OncoGraphToolResult` (from `voice_agent/contracts.py`).
+    - Return `result.model_dump()` (or equivalent JSON-serializable dict) as the tool output.
+  - The tool itself does **no natural language generation**; it only returns structured data.
+- Register this tool in the agent’s LLM/tool configuration so Gemini can:
+  - Decide **when** to call it (for graph questions only).
+  - See the full `OncoGraphToolResult` schema (status, entities, payload) for response planning.
+
+### 6.5 Conversation Policy & Tool Usage
+
+- In the Gemini system prompt (LLM config), encode the Stage 5.8/5.9 behavior:
+  - **When to call the tool:**
+    - Use `oncograph_query` for questions about biomarkers, therapies, variants, and diseases that match the 10 intents.
+    - Do **not** call the tool for greetings, thanks, small talk, or clearly off-topic queries.
+  - **Status handling:**
+    - `status="ok"`: summarize the payload in 1–3 short sentences, naming the top 3 items and optionally mentioning evidence level A/B.
+    - `status="needs_clarification"`: ask exactly **one** clarifying question using the `message` field.
+    - `status="no_results"`: say you didn’t find results and suggest a simple rephrase, using `message` if provided.
+    - `status="not_supported"`: explain briefly that the question is too complex or unsupported in voice mode, and suggest an example supported query.
+    - `status="error"`: give a generic “I ran into a problem, please try again” reply (no stack traces).
+  - **List behavior:** When many items exist, speak only the top 3 plus “and N others,” where `speak_top_n` comes from `voice.voice_hint`.
+  - **Safety:** Never give medical advice; emphasize research/education only.
+
+### 6.6 Voice UX Guardrails
+
+- If STT produces uncertain or misheard therapy/gene names (common with drug names):
+  - Let the `oncograph_query` tool attempt normalization using the entity index.
+  - If the tool returns `needs_clarification`, ask a single concise question like: “Which therapy did you mean?”
+- Don’t read out long lists or raw counts:
+  - Always limit spoken items to the top 3 plus “and N others” when appropriate.
+- Avoid PMIDs, URLs, or raw Cypher; keep responses high-level and conversational.
+
+### 6.7 Logging & Observability
+
+- Inside the agent / tool code, log per turn (server-side only):
+  - User transcript text (from STT).
+  - Tool status/intent/confidence/entities from `OncoGraphToolResult`.
+  - Neo4j execution time and total tool latency.
+- Use LiveKit Cloud’s **agent logs and traces** to debug latency and tool-calling behavior.
+- Do **not** expose internal logs or stack traces to the LLM or to the user.
 
 ### Done When
 - [ ] You can join a LiveKit room and ask at least one query per template type by voice
