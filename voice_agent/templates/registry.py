@@ -248,6 +248,7 @@ TEMPLATES: dict[str, QueryTemplate] = {
     "resistance_biomarkers_query": QueryTemplate(
         id="resistance_biomarkers_query",
         description="Find genes whose variants predict resistance to a specific therapy",
+        example="Which genes cause resistance to cetuximab?",
         required_entities=["therapy"],
         optional_entities=["disease"],
         cypher=RESISTANCE_BIOMARKERS_CYPHER.strip(),
@@ -256,6 +257,7 @@ TEMPLATES: dict[str, QueryTemplate] = {
     "sensitivity_biomarkers_query": QueryTemplate(
         id="sensitivity_biomarkers_query",
         description="Find genes whose variants predict sensitivity to a specific therapy",
+        example="What predicts sensitivity to imatinib?",
         required_entities=["therapy"],
         optional_entities=["disease"],
         cypher=SENSITIVITY_BIOMARKERS_CYPHER.strip(),
@@ -264,6 +266,7 @@ TEMPLATES: dict[str, QueryTemplate] = {
     "therapy_targets_query": QueryTemplate(
         id="therapy_targets_query",
         description="What genes does a therapy target via TARGETS relationship",
+        example="What does vemurafenib target?",
         required_entities=["therapy"],
         optional_entities=[],
         cypher=THERAPY_TARGETS_CYPHER.strip(),
@@ -272,6 +275,7 @@ TEMPLATES: dict[str, QueryTemplate] = {
     "gene_targeting_therapies_query": QueryTemplate(
         id="gene_targeting_therapies_query",
         description="What therapies target a specific gene",
+        example="What therapies target BRAF?",
         required_entities=["gene"],
         optional_entities=[],
         cypher=GENE_TARGETING_THERAPIES_CYPHER.strip(),
@@ -280,6 +284,7 @@ TEMPLATES: dict[str, QueryTemplate] = {
     "gene_variants_query": QueryTemplate(
         id="gene_variants_query",
         description="List variants of a gene that have clinical evidence in the database",
+        example="What variants of KRAS have evidence?",
         required_entities=["gene"],
         optional_entities=[],
         cypher=GENE_VARIANTS_CYPHER.strip(),
@@ -288,6 +293,7 @@ TEMPLATES: dict[str, QueryTemplate] = {
     "variant_response_query": QueryTemplate(
         id="variant_response_query",
         description="How does a specific variant affect response to a specific therapy",
+        example="Does BRAF V600E respond to dabrafenib?",
         required_entities=["variant", "therapy"],
         optional_entities=[],
         cypher=VARIANT_RESPONSE_CYPHER.strip(),
@@ -296,6 +302,7 @@ TEMPLATES: dict[str, QueryTemplate] = {
     "gene_overview_query": QueryTemplate(
         id="gene_overview_query",
         description="General summary statistics about a gene (variant count, therapies targeting it)",
+        example="Tell me about EGFR",
         required_entities=["gene"],
         optional_entities=[],
         cypher=GENE_OVERVIEW_CYPHER.strip(),
@@ -304,6 +311,7 @@ TEMPLATES: dict[str, QueryTemplate] = {
     "therapy_overview_query": QueryTemplate(
         id="therapy_overview_query",
         description="General summary statistics about a therapy (target genes, biomarker associations)",
+        example="Tell me about cetuximab",
         required_entities=["therapy"],
         optional_entities=[],
         cypher=THERAPY_OVERVIEW_CYPHER.strip(),
@@ -312,6 +320,7 @@ TEMPLATES: dict[str, QueryTemplate] = {
     "disease_biomarkers_query": QueryTemplate(
         id="disease_biomarkers_query",
         description="Top biomarker genes for a specific disease",
+        example="What biomarkers matter in lung cancer?",
         required_entities=["disease"],
         optional_entities=[],
         cypher=DISEASE_BIOMARKERS_CYPHER.strip(),
@@ -320,9 +329,25 @@ TEMPLATES: dict[str, QueryTemplate] = {
     "disease_therapies_query": QueryTemplate(
         id="disease_therapies_query",
         description="Therapies with biomarker evidence in a specific disease",
+        example="What therapies have evidence in colorectal cancer?",
         required_entities=["disease"],
         optional_entities=[],
         cypher=DISEASE_THERAPIES_CYPHER.strip(),
         format_response=build_disease_therapies_payload,
     ),
 }
+
+# Ordered list of intent IDs derived from templates plus non-query intents.
+INTENT_IDS: list[str] = list(TEMPLATES.keys()) + ["conversational", "complex", "unclear"]
+
+
+def get_required_entities(intent: str) -> list[str]:
+    """Return required entities for an intent, or an empty list if missing."""
+    template = TEMPLATES.get(intent)
+    return template.required_entities if template else []
+
+
+def get_optional_entities(intent: str) -> list[str]:
+    """Return optional entities for an intent, or an empty list if missing."""
+    template = TEMPLATES.get(intent)
+    return template.optional_entities if template else []

@@ -12,8 +12,8 @@ from voice_agent.contracts import NormalizedEntities, OncoGraphToolResult, Voice
 from voice_agent.entities import create_normalizer
 from voice_agent.entities.index import _build_executor
 from voice_agent.router.classifier import GeminiRouter, route_query
-from voice_agent.router.models import INTENT_REQUIRED_ENTITIES
 from voice_agent.templates import fill_template, get_template
+from voice_agent.templates.registry import get_required_entities
 
 logger = logging.getLogger(__name__)
 
@@ -137,9 +137,7 @@ async def handle_query(
         status = "not_supported"
     elif result.intent == "complex":
         message = (
-            "That's a complex question that needs more analysis. "
-            "I'll have results ready in the web dashboard in about a minute. "
-            "Is there something simpler I can help with now?"
+            "That's a complex question that needs more analysis. " "Is there something simpler I can help with now?"
         )
         status = "not_supported"
     elif result.intent == "unclear":
@@ -204,7 +202,7 @@ async def handle_query(
         )
 
     # Step 5: Entity validation
-    required_entities = INTENT_REQUIRED_ENTITIES.get(result.intent, [])
+    required_entities = get_required_entities(result.intent)
 
     for entity_type in required_entities:
         entity_value = entities_dict.get(entity_type)

@@ -23,4 +23,3 @@ __all__ = [
     "fill_template",
     "TEMPLATES",
 ]
-

@@ -2,7 +2,24 @@ from __future__ import annotations
 
 from textwrap import dedent
 
-from .models import INTENT_DESCRIPTIONS, INTENT_EXAMPLES, INTENT_IDS, INTENT_REQUIRED_ENTITIES
+# Intents that are routed but do not have executable templates.
+SPECIAL_INTENTS = [
+    {
+        "id": "conversational",
+        "description": "Greetings, thanks, goodbyes, or off-topic chat that doesn't require database queries",
+        "example": "Hello",
+    },
+    {
+        "id": "complex",
+        "description": "Multi-entity comparisons or exclusions that need deeper analysis beyond templates",
+        "example": "Compare resistance profiles for cetuximab and panitumumab",
+    },
+    {
+        "id": "unclear",
+        "description": "Cannot determine intent from the query (too vague or gibberish)",
+        "example": "asdfghjkl",
+    },
+]
 
 ROUTER_SYSTEM_MESSAGE = """You are a fast intent router for an oncology knowledge graph.
 You will be given a user query and you will need to determine the intent of the query, 
@@ -12,19 +29,33 @@ along with the relevant entities that are present in the query.
 
 def _format_intent_table() -> str:
     rows: list[str] = []
-    for intent in INTENT_IDS:
-        description = INTENT_DESCRIPTIONS[intent]
-        required = INTENT_REQUIRED_ENTITIES[intent]
+    from voice_agent.templates.registry import INTENT_IDS, TEMPLATES
+
+    for intent_id in INTENT_IDS:
+        if intent_id not in TEMPLATES:
+            continue
+        template = TEMPLATES[intent_id]
+        required = template.required_entities
         required_str = ", ".join(required) if required else "none"
-        rows.append(f"- {intent}: {description} (required = {required_str})")
+        rows.append(f"- {intent_id}: {template.description} (required = {required_str})")
+    for intent in SPECIAL_INTENTS:
+        rows.append(f"- {intent['id']}: {intent['description']} (required = none)")
     return "\n".join(rows)
 
 
 def _format_intent_examples() -> str:
     rows: list[str] = []
-    for intent in INTENT_IDS:
-        example = INTENT_EXAMPLES[intent]
-        rows.append(f'- {intent}: "{example}"')
+    from voice_agent.templates.registry import INTENT_IDS, TEMPLATES
+
+    for intent_id in INTENT_IDS:
+        if intent_id not in TEMPLATES:
+            continue
+        template = TEMPLATES[intent_id]
+        if not template.example:
+            continue
+        rows.append(f'- {intent_id}: "{template.example}"')
+    for intent in SPECIAL_INTENTS:
+        rows.append(f'- {intent["id"]}: "{intent["example"]}"')
     return "\n".join(rows)
 
 

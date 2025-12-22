@@ -10,6 +10,7 @@ class QueryTemplate(BaseModel):
 
     id: str  # matches intent ID from router
     description: str  # human-readable description
+    example: str | None = None  # example query for prompt building
     required_entities: list[str]  # must be present to execute
     optional_entities: list[str]  # enhance query if present
     cypher: str  # Cypher query with {entity} placeholders
@@ -18,4 +19,3 @@ class QueryTemplate(BaseModel):
         [list[dict[str, object]], dict[str, str | None], int],
         BaseModel | None,
     ]
-
