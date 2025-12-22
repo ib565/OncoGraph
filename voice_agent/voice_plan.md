@@ -10,7 +10,7 @@ This document covers the complete implementation of the OncoGraph voice AI agent
 
 1. **Fast-Path Query Engine** (Stages 1-5): A specialized tool that classifies natural language queries, extracts entities, matches to pre-written Cypher templates, executes queries against Neo4j, and returns structured JSON payloads optimized for voice output.
 
-2. **Conversational Agent** (Stage 6+): A Gemini Flash-powered conversational agent that handles greetings, clarifications, and natural language generation, calling the fast-path tool when graph queries are needed.
+2. **Conversational Agent** (Stage 6+): A Gemini Flash-powered conversational agent that handles greetings, clarifications, and natural language generation, calling the fast-path tool when graph queries are needed. Integrated with the existing OncoGraph web frontend (Stage 7) and deployed to LiveKit Cloud (Stage 8).
 
 The system is designed for low latency (<2 seconds for template-matched queries) and voice-friendly responses (1-3 sentences, top N items, natural phrasing).
 
@@ -41,13 +41,14 @@ The system is designed for low latency (<2 seconds for template-matched queries)
 - Update all templates and tests to use new payload structure
 - Location: `voice_agent/contracts.py`, `voice_agent/handler.py`, `voice_agent/templates/formatters.py`
 
-**✅ Stage 6: Wire in LiveKit (Voice MVP)** - COMPLETE
+**✅ Stage 6: Wire in LiveKit (Voice MVP - Local)** - COMPLETE
 - Integrated LiveKit agent framework (`voice_agent/voice_server.py`)
 - Connected Gemini Flash Lite as conversational LLM via LiveKit Inference
 - Registered OncoGraph tool (`oncograph_query`) for function calling
 - Added Deepgram STT (Nova-3) and Cartesia TTS (Sonic-3) via LiveKit Inference
 - Configured logging to suppress verbose third-party DEBUG logs
-- Tested end-to-end: agent successfully processes voice queries and calls tool
+- Tested end-to-end locally: agent successfully processes voice queries and calls tool
+- Note: Stage 6 uses LiveKit Cloud for hosting, but tested locally first
 
 
 
@@ -76,7 +77,7 @@ Return OncoGraphToolResult to conversational agent
 
 **Full Voice System (Stage 6+):**
 ```
-User speech (LiveKit)
+User speech (OncoGraph Frontend → LiveKit)
     ↓
 Speech-to-Text (Deepgram)
     ↓
@@ -88,7 +89,7 @@ Natural Language Generation (Gemini Flash)
     ↓
 Text-to-Speech (Cartesia)
     ↓
-User hears response
+User hears response (via LiveKit → Frontend)
 ```
 
 ---
@@ -1399,16 +1400,17 @@ Output:
 
 **Goal:** Put the “Gemini Flash + oncograph_query tool” loop behind realtime voice using LiveKit Agents, LiveKit Cloud, and LiveKit Inference (Gemini LLM, Deepgram STT, Cartesia TTS).
 
-### 6.1 Architecture & Hosting (LiveKit Cloud + direct Neo4j)
+### 6.1 Architecture & Hosting (Local Development + LiveKit Cloud)
 
-- **Agent hosting:** Run the voice agent as a **LiveKit Agent** deployed on **LiveKit Cloud** (no self-hosted SFU for MVP).
+- **Agent hosting:** Run the voice agent as a **LiveKit Agent**. For Stage 6, tested locally first; deployment to **LiveKit Cloud** follows in Stage 8.
 - **Code location:** Package the existing `voice_agent` Python package (router, entities, templates, `handler.py`, `contracts.py`) into the agent container so all tool logic runs **inside** the agent.
 - **Database access:** The agent connects **directly to Neo4j** using the existing `Neo4jExecutor` and env vars (same as Render), over the public network.
-  - Configure `NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD` (and any other required vars) as **LiveKit Cloud secrets** for the agent deployment.
+  - For local dev: Use existing `.env` file with Neo4j credentials.
+  - For LiveKit Cloud: Configure `NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD` as **LiveKit Cloud secrets**.
   - Ensure Neo4j is reachable from LiveKit Cloud (public endpoint or firewall rules that allow Cloud IP ranges).
-- **Frontend:** For Stage 6, no custom frontend is required; use the LiveKit **Agent Playground / Voice AI quickstart UI** to join a room and talk to the agent.
+- **Frontend:** For Stage 6 initial testing, used LiveKit **Agent Playground / Voice AI quickstart UI**. Frontend integration with existing OncoGraph web app follows in Stage 7.
 
-This matches LiveKit’s standard model: the agent is a normal Python process (on LiveKit Cloud) that can call any Python code and talk to external services (like Neo4j) over the network.
+This matches LiveKit's standard model: the agent is a normal Python process that can call any Python code and talk to external services (like Neo4j) over the network.
 
 ### 6.2 Models: Gemini LLM + Deepgram STT + Cartesia TTS via LiveKit Inference
 
@@ -1507,47 +1509,212 @@ This matches LiveKit’s standard model: the agent is a normal Python process (o
 
 ---
 
-## Stage 7: Conversation Context (Lean, No Enrichment)
+## Stage 7: Integrate Voice with OncoGraph Frontend
 
-**Goal:** Improve follow-ups (“those genes”, “that therapy”) without building heavy infra.
+**Status:** ⏳ Not Started
 
-### 7.1 Minimal State (Agent-side)
+**Goal:** Add voice interaction UI to the existing OncoGraph web application (`web/`) so users can query the knowledge graph via voice from the main interface. This enables local demos before deploying to LiveKit Cloud.
 
-Store the last successful tool payload in memory:
-- last intent
-- last entities
-- last top items (genes/therapies/variants)
-- last disease if present
+### 7.1 Frontend Architecture
 
-This is optional because Gemini has chat history, but it helps reliability if you later truncate tool outputs.
+- **Location:** Add voice UI components to `web/app/components/`
+- **Integration point:** Add voice controls to `GraphPanel.tsx` or create a new `VoicePanel.tsx` component
+- **LiveKit Client:** Use `livekit-client` (or `@livekit/components-react` if using React components) to connect to LiveKit rooms
+- **Room management:** Create/join LiveKit rooms on-demand when user enables voice mode
 
-### 7.2 Prompt Add-on
+### 7.2 Voice UI Components
 
-```text
-If the user says “those genes/that therapy/that variant,” use the most recent tool result.
-If it’s ambiguous, ask one clarifying question.
-```
+**Required components:**
+- **Voice Toggle Button:** Start/stop voice session, show connection status
+- **Microphone Indicator:** Visual feedback when listening (waveform animation, "Listening..." text)
+- **Transcript Display:** Show user's speech transcript in real-time (optional, for debugging)
+- **Agent Response Indicator:** Show when agent is speaking/thinking (spinner or waveform)
+- **Error Handling:** Display connection errors, microphone permission errors, etc.
+
+**UI/UX considerations:**
+- Keep voice UI minimal and non-intrusive (floating button or sidebar panel)
+- Match existing OncoGraph design system (colors, fonts, spacing)
+- Provide clear visual feedback for all states (idle, listening, processing, speaking)
+- Handle microphone permissions gracefully (request on first use)
+
+### 7.3 LiveKit Room Connection
+
+**Connection flow:**
+1. User clicks "Start Voice" button
+2. Frontend requests LiveKit access token from backend (or generates client-side if using public keys)
+3. Create/join LiveKit room with unique room name (e.g., `voice-{userId}-{timestamp}`)
+4. Connect microphone and subscribe to agent audio tracks
+5. Handle room disconnection and reconnection gracefully
+
+**Token generation:**
+- Option A: Add endpoint to existing FastAPI backend (`/api/voice/token`) that generates LiveKit access tokens
+- Option B: Generate tokens client-side using LiveKit's token generation library (requires API key/secret in frontend, less secure)
+- **Recommendation:** Use backend endpoint for production, client-side for local dev
+
+### 7.4 Audio Handling
+
+**Microphone:**
+- Request microphone permission on first voice session start
+- Handle permission denial gracefully (show message, disable voice button)
+- Use browser's `getUserMedia()` API via LiveKit client SDK
+- Handle microphone disconnection/reconnection
+
+**Audio playback:**
+- LiveKit client SDK handles agent audio playback automatically
+- Ensure audio is not muted by browser autoplay policies
+- Provide volume control if needed
+
+### 7.5 State Management
+
+**Voice session state:**
+- `isConnected`: Whether connected to LiveKit room
+- `isListening`: Whether microphone is active and listening
+- `isAgentSpeaking`: Whether agent is currently speaking
+- `transcript`: Current user transcript (optional, for debugging)
+- `error`: Connection/audio errors
+
+**Integration with existing state:**
+- Consider adding voice state to `AppContext.tsx` if shared across components
+- Or keep voice state local to voice component if isolated
+
+### 7.6 Backend Integration (Optional)
+
+**If adding token endpoint:**
+- Add `/api/voice/token` endpoint to FastAPI backend
+- Generate LiveKit access tokens server-side using LiveKit SDK
+- Include user identity, room name, and permissions in token
+- Return token to frontend for room connection
+
+**Environment variables:**
+- `LIVEKIT_URL`: LiveKit server URL (local dev or LiveKit Cloud)
+- `LIVEKIT_API_KEY`: LiveKit API key
+- `LIVEKIT_API_SECRET`: LiveKit API secret
+
+### 7.7 Testing Strategy
+
+**Local testing:**
+1. Run voice agent locally: `python -m voice_agent.voice_server dev`
+2. Run frontend locally: `cd web && npm run dev`
+3. Connect frontend to local LiveKit instance (or LiveKit Cloud for testing)
+4. Test voice queries end-to-end
+
+**Test cases:**
+- [ ] Voice button toggles connection
+- [ ] Microphone permission request works
+- [ ] User speech is transcribed and sent to agent
+- [ ] Agent responses are played back correctly
+- [ ] Connection errors are handled gracefully
+- [ ] Multiple voice sessions don't conflict
+- [ ] UI matches existing OncoGraph design
 
 ### Done When
-- [ ] “those genes” references work in 2–3 turn demos
-- [ ] Ambiguity triggers one question, not a cascade
+- [ ] Voice UI component added to OncoGraph frontend
+- [ ] Users can start/stop voice sessions from the web app
+- [ ] Voice queries work end-to-end (speech → agent → response)
+- [ ] UI provides clear feedback for all states
+- [ ] Error handling covers common failure modes
+- [ ] Local demo works without LiveKit Cloud deployment
 
+### Implementation Notes
+
+- **LiveKit Client SDK:** Use `livekit-client` npm package or `@livekit/components-react` for React integration
+- **Room naming:** Use unique room names to avoid conflicts (e.g., `voice-{userId}-{timestamp}`)
+- **Token security:** For production, generate tokens server-side; for local dev, client-side is acceptable
+- **Design consistency:** Match existing OncoGraph UI patterns (see `GraphPanel.tsx`, `TopBar.tsx` for reference)
 
 ---
 
-## Stage 8: Deploy Voice Worker (Demo-Ready)
+## Stage 8: Deploy Voice Worker to LiveKit Cloud (Demo-Ready)
 
-**Goal:** Always-on agent worker + LiveKit Cloud so you can demo reliably.
+**Status:** ⏳ Not Started
 
-### Deployment checklist
-- agent worker does not sleep aggressively
-- builds entity index at startup
-- health check verifies Neo4j connectivity
-- env var management for keys
-- timeouts enforced so voice never hangs
+**Goal:** Deploy the voice agent to LiveKit Cloud so it's always-on and accessible from the frontend without running local code. This enables production-ready demos.
+
+**Prerequisites:** Stage 7 (Frontend Integration) should be complete so the frontend can connect to the deployed agent.
+
+### 8.1 LiveKit Cloud Deployment
+
+**Agent deployment:**
+- Package `voice_agent` Python package for LiveKit Cloud deployment
+- Configure LiveKit Cloud project with agent worker settings
+- Set environment variables/secrets:
+  - `NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD`
+  - `GOOGLE_API_KEY` (for Gemini LLM)
+  - `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` (if not using Inference)
+- Ensure agent worker has network access to Neo4j (public endpoint or firewall rules)
+
+**Deployment method:**
+- Use LiveKit CLI: `lk agent deploy` (or follow LiveKit Cloud dashboard instructions)
+- Or use Docker container with LiveKit agent runtime
+- Configure auto-scaling if needed (for multiple concurrent sessions)
+
+### 8.2 Agent Worker Configuration
+
+**Startup behavior:**
+- Agent worker builds entity index at startup (logs build time)
+- Health check endpoint verifies Neo4j connectivity
+- Graceful shutdown handling (finish active sessions before stopping)
+
+**Resource requirements:**
+- Memory: Sufficient for entity index (~100-200MB) + Python runtime
+- CPU: Adequate for LLM calls and Neo4j queries (2+ cores recommended)
+- Network: Low latency to Neo4j and LiveKit Cloud SFU
+
+### 8.3 Environment Variable Management
+
+**Required secrets (LiveKit Cloud):**
+- `NEO4J_URI`: Neo4j database connection string
+- `NEO4J_USER`: Neo4j username
+- `NEO4J_PASSWORD`: Neo4j password
+- `GOOGLE_API_KEY`: Google API key for Gemini (if not using LiveKit Inference)
+- `GOOGLE_API_KEY_ALT`: Alternate API key for rate limit fallback (optional)
+
+**Optional configuration:**
+- `LOG_LEVEL`: Set to `INFO` (default) or `DEBUG` for troubleshooting
+- `ENTITY_INDEX_REBUILD`: Force entity index rebuild on startup (default: false)
+
+### 8.4 Health Checks & Monitoring
+
+**Health check endpoint:**
+- Implement `/healthz` endpoint in agent server (if supported by LiveKit Cloud)
+- Verify Neo4j connectivity
+- Check entity index is loaded
+- Return 200 OK if healthy, 503 if unhealthy
+
+**Monitoring:**
+- Use LiveKit Cloud's built-in agent logs and traces
+- Monitor latency metrics (router, Neo4j, total tool execution)
+- Track error rates and tool call success rates
+- Set up alerts for high error rates or latency spikes
+
+### 8.5 Timeout & Error Handling
+
+**Timeouts:**
+- Router LLM call: 5 seconds (already implemented)
+- Neo4j query: 10 seconds (already implemented)
+- Tool execution: 15 seconds total (fail gracefully)
+- Agent session: No timeout (let user disconnect naturally)
+
+**Error handling:**
+- All errors return user-safe messages (no stack traces)
+- Log errors server-side for debugging
+- Retry logic for transient failures (rate limits, network issues)
+
+### 8.6 Frontend Configuration Update
+
+**Update frontend to use LiveKit Cloud:**
+- Set `LIVEKIT_URL` to LiveKit Cloud project URL
+- Update token generation endpoint to use LiveKit Cloud credentials
+- Test connection from production frontend to deployed agent
 
 ### Done When
-- [ ] You can demo from a fresh browser session without running code locally
+- [ ] Agent worker deployed to LiveKit Cloud and running
+- [ ] Entity index builds successfully on startup
+- [ ] Health checks pass (Neo4j connectivity verified)
+- [ ] Frontend can connect to deployed agent
+- [ ] Voice queries work end-to-end from production frontend
+- [ ] No local code execution required for demos
+- [ ] Monitoring shows stable latency and low error rates
 
 
 ---
@@ -1586,15 +1753,16 @@ voice_agent/
 ├── entities/
 │   ├── __init__.py         # Export EntityIndex, get_index(), create_normalizer()
 │   └── index.py            # EntityIndex class, index building, normalization
-├── templates/              # (Stage 3 - not yet implemented)
+├── templates/              # (Stage 3 - COMPLETE)
 │   ├── __init__.py
 │   ├── models.py          # QueryTemplate dataclass
 │   ├── registry.py        # TEMPLATES dict with all 10 templates
 │   ├── cypher.py          # Template filling logic
-│   └── formatters.py      # Response formatter functions
-├── context.py             # ConversationContext class (Stage 6)
+│   └── formatters.py      # Payload builder functions (Stage 5)
 ├── handler.py             # Main handle_query function (Stage 4)
-└── test_router.py         # Test script for non-voice testing
+├── contracts.py           # OncoGraphToolResult and payload models (Stage 5)
+├── voice_server.py        # LiveKit agent server entrypoint (Stage 6)
+└── test_handler_cli.py    # Test script for non-voice testing
 ```
 
 **Note:** Neo4j connection is handled by reusing `Neo4jExecutor` from `src/pipeline/executor.py`. No separate `db.py` needed.
