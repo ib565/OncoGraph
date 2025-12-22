@@ -625,7 +625,7 @@ Define a dataclass or Pydantic model:
 **Cypher pattern:**
 - MATCH Therapy -[TARGETS]-> Gene
 - Filter: gene symbol/synonyms match
-- Return therapy name, mechanism, modality
+- Return therapy name and mechanism of action (MOA)
 - Limit 10
 
 **Response format:**
@@ -699,9 +699,9 @@ Define a dataclass or Pydantic model:
 
 **Cypher pattern:**
 - MATCH Therapy by name/synonyms
-- OPTIONAL MATCH target genes
+- OPTIONAL MATCH target genes (and their TARGETS MOA)
 - OPTIONAL MATCH biomarker evidence pointing to therapy
-- Return therapy name, modality, target count, biomarker count
+- Return therapy name, target count, biomarker count, and top-N target genes with MOA
 
 **Response format:**
 - Not found: "{therapy} is not in my database."
@@ -971,7 +971,6 @@ class SensitivityBiomarkersPayload(BaseModel):
 class TherapyTargetsPayload(BaseModel):
     intent: Literal["therapy_targets_query"]
     therapy: str
-    modality: Optional[str] = None  # From therapy node
     total_targets: int
     targets: list[dict[str, Optional[str]]] = Field(
         default_factory=list,
@@ -990,7 +989,7 @@ class GeneTargetingTherapiesPayload(BaseModel):
         default_factory=list,
         max_length=5
     )
-    # therapies items: {"therapy": str, "moa": str | None, "modality": str | None}
+    # therapies items: {"therapy": str, "moa": str | None}
 ```
 
 **5. GeneVariantsPayload**
@@ -1036,7 +1035,6 @@ class GeneOverviewPayload(BaseModel):
 class TherapyOverviewPayload(BaseModel):
     intent: Literal["therapy_overview_query"]
     therapy: str
-    modality: Optional[str] = None
     target_count: int
     biomarker_count: int
     targets: list[dict[str, Optional[str]]] = Field(

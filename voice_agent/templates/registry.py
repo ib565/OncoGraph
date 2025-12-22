@@ -110,7 +110,6 @@ RETURN
   NULL AS effect,
   NULL AS disease_name,
   r.moa AS targets_moa,
-  t.modality AS modality,
   coalesce(r.ref_sources, []) AS ref_sources,
   coalesce(r.ref_ids, []) AS ref_ids,
   coalesce(r.ref_urls, []) AS ref_urls
@@ -191,14 +190,17 @@ WHERE (
   toLower(t.name) = toLower('{therapy}')
   OR any(s IN coalesce(t.synonyms, []) WHERE toLower(s) = toLower('{therapy}'))
 )
-OPTIONAL MATCH (t)-[:TARGETS]->(g:Gene)
+OPTIONAL MATCH (t)-[:TARGETS]->(g_all:Gene)
 OPTIONAL MATCH (b:Biomarker)-[:AFFECTS_RESPONSE_TO]->(t)
+WITH t, count(DISTINCT g_all) AS target_count, count(DISTINCT b) AS biomarker_count
+OPTIONAL MATCH (t)-[r:TARGETS]->(g:Gene)
 RETURN
   t.name AS therapy_name,
-  t.modality AS modality,
-  count(DISTINCT g) AS target_count,
-  count(DISTINCT b) AS biomarker_count
-LIMIT 1
+  target_count,
+  biomarker_count,
+  g.symbol AS gene_symbol,
+  r.moa AS targets_moa
+LIMIT 10
 """
 
 # Template 9: disease_biomarkers_query
@@ -301,7 +303,7 @@ TEMPLATES: dict[str, QueryTemplate] = {
     ),
     "therapy_overview_query": QueryTemplate(
         id="therapy_overview_query",
-        description="General summary statistics about a therapy (modality, target genes, biomarker associations)",
+        description="General summary statistics about a therapy (target genes, biomarker associations)",
         required_entities=["therapy"],
         optional_entities=[],
         cypher=THERAPY_OVERVIEW_CYPHER.strip(),
@@ -324,4 +326,3 @@ TEMPLATES: dict[str, QueryTemplate] = {
         format_response=disease_therapies_formatter,
     ),
 }
-

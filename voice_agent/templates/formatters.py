@@ -354,10 +354,19 @@ def therapy_overview_formatter(
     if not results or len(results) == 0:
         return f"{therapy} is not in my database."
 
-    row = results[0]
-    modality = _clean_value(row.get("modality"))
-    target_count = row.get("target_count", 0)
-    biomarker_count = row.get("biomarker_count", 0)
+    # Extract counts from the first row (same for all rows) and collect target genes/MOA.
+    row0 = results[0]
+    target_count = row0.get("target_count", 0)
+    biomarker_count = row0.get("biomarker_count", 0)
+    genes: list[str] = []
+    moas: list[str] = []
+    for row in results:
+        gene = _clean_value(row.get("gene_symbol"))
+        moa = _clean_value(row.get("targets_moa"))
+        if gene and gene not in genes:
+            genes.append(gene)
+        if moa:
+            moas.append(moa)
 
     if isinstance(target_count, (int, float)):
         target_count = int(target_count)
@@ -370,11 +379,20 @@ def therapy_overview_formatter(
         biomarker_count = 0
 
     parts = []
-    if modality:
-        parts.append(f"a {modality}")
-
     if target_count > 0:
-        parts.append(f"targets {_number_to_word(target_count)} gene{'s' if target_count > 1 else ''}")
+        gene_list = _format_gene_list(genes, max_items_to_list) if genes else ""
+        if gene_list:
+            parts.append(
+                f"targets {_number_to_word(target_count)} gene{'s' if target_count > 1 else ''}, including {gene_list}"
+            )
+        else:
+            parts.append(f"targets {_number_to_word(target_count)} gene{'s' if target_count > 1 else ''}")
+
+        # If all MOAs are the same and present, mention mechanism class.
+        unique_moas = {m for m in moas if m}
+        if len(unique_moas) == 1:
+            moa = list(unique_moas)[0]
+            parts[-1] += f" as a {moa}"
 
     if biomarker_count > 0:
         parts.append(
@@ -384,7 +402,7 @@ def therapy_overview_formatter(
     if not parts:
         return f"{therapy} is in my database but has no target genes or biomarker associations."
 
-    return f"{therapy} is {', '.join(parts)}."
+    return f"{therapy} {', '.join(parts)}."
 
 
 def disease_biomarkers_formatter(
@@ -458,4 +476,3 @@ def disease_therapies_formatter(
         return f"In {disease}, therapies with most evidence are {therapy_list}."
 
     return f"In {disease}, therapies with biomarker evidence are {therapy_list}."
-

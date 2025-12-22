@@ -258,18 +258,16 @@ class TestTherapyOverviewFormatter:
         assert "not in my database" in result.lower()
 
     def test_with_all_info(self):
-        """Test with modality, targets, and biomarkers."""
+        """Test with targets and biomarkers."""
         results = [
             {
                 "therapy_name": "cetuximab",
-                "modality": "monoclonal antibody",
                 "target_count": 1,
                 "biomarker_count": 20,
             }
         ]
         result = therapy_overview_formatter(results, {"therapy": "cetuximab"}, 3)
         assert "cetuximab" in result
-        assert "monoclonal antibody" in result
         assert "one" in result or "1" in result
         assert "twenty" in result or "20" in result
 
@@ -370,4 +368,3 @@ class TestFormatterEdgeCases:
         assert "BRAF" in result
         # Should mention others
         assert "others" in result or "three" in result
-
