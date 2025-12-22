@@ -10,13 +10,47 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import logging
 import sys
 
 from dotenv import load_dotenv
 
 from voice_agent.handler import handle_query
 
+
+class _MetricsDefaultsFilter(logging.Filter):
+    """Ensure timing/intent fields exist on all records used by the CLI formatter.
+
+    Third‑party libraries (httpx, google.genai, etc.) don't know about our
+    custom fields, so the formatter must not fail when they are missing.
+    """
+
+    _FIELDS = ("intent", "router_ms", "template_ms", "cypher_ms", "formatting_ms", "total_ms", "latency_ms")
+
+    def filter(self, record: logging.LogRecord) -> bool:  # type: ignore[override]
+        for field in self._FIELDS:
+            if not hasattr(record, field):
+                setattr(record, field, "")
+        return True
+
+
 load_dotenv()
+logging.basicConfig(
+    level=logging.INFO,
+    format=(
+        "%(asctime)s %(levelname)s %(name)s "
+        "intent=%(intent)s "
+        "router_ms=%(router_ms)s template_ms=%(template_ms)s "
+        "cypher_ms=%(cypher_ms)s formatting_ms=%(formatting_ms)s "
+        "total_ms=%(total_ms)s latency_ms=%(latency_ms)s %(message)s"
+    ),
+    force=True,
+)
+
+# Attach a filter so that logs from libraries without our custom fields
+# still render correctly with the same formatter.
+for _handler in logging.getLogger().handlers:
+    _handler.addFilter(_MetricsDefaultsFilter())
 
 
 async def main() -> int:
