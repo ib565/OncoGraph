@@ -1515,112 +1515,410 @@ This matches LiveKit's standard model: the agent is a normal Python process that
 
 **Goal:** Add voice interaction UI to the existing OncoGraph web application (`web/`) so users can query the knowledge graph via voice from the main interface. This enables local demos before deploying to LiveKit Cloud.
 
-### 7.1 Frontend Architecture
+### 7.1 Architecture Decisions
 
-- **Location:** Add voice UI components to `web/app/components/`
-- **Integration point:** Add voice controls to `GraphPanel.tsx` or create a new `VoicePanel.tsx` component
-- **LiveKit Client:** Use `livekit-client` (or `@livekit/components-react` if using React components) to connect to LiveKit rooms
-- **Room management:** Create/join LiveKit rooms on-demand when user enables voice mode
+**LiveKit Connection Setup:**
+- **Local Development:** Agent runs locally via `python -m voice_agent.voice_server dev`
+- **Frontend Connection:** Frontend connects to LiveKit Cloud SFU (same as LiveKit Playground)
+- **Room Management:** Create unique rooms per session (`voice-{userId}-{timestamp}`)
+- **Token Generation:** Backend endpoint `/api/voice/token` generates LiveKit access tokens server-side
 
-### 7.2 Voice UI Components
+**Component Structure:**
+```
+web/app/
+├── voice/
+│   └── page.tsx                    # Voice tab page route
+├── components/
+│   ├── VoicePanel.tsx              # Main voice component (similar to GraphPanel)
+│   ├── VoiceControls.tsx           # Mic button, connection status, transcript
+│   └── VoiceResults.tsx             # MiniGraph + raw JSON display
+└── contexts/
+    └── AppContext.tsx               # Add voiceState with localStorage persistence
+```
 
-**Required components:**
-- **Voice Toggle Button:** Start/stop voice session, show connection status
-- **Microphone Indicator:** Visual feedback when listening (waveform animation, "Listening..." text)
-- **Transcript Display:** Show user's speech transcript in real-time (optional, for debugging)
-- **Agent Response Indicator:** Show when agent is speaking/thinking (spinner or waveform)
-- **Error Handling:** Display connection errors, microphone permission errors, etc.
+**Dependencies:**
+- Install `livekit-client` npm package for LiveKit SDK
+- Optional: `@livekit/components-react` for React hooks/components (can add later if needed)
 
-**UI/UX considerations:**
-- Keep voice UI minimal and non-intrusive (floating button or sidebar panel)
-- Match existing OncoGraph design system (colors, fonts, spacing)
-- Provide clear visual feedback for all states (idle, listening, processing, speaking)
-- Handle microphone permissions gracefully (request on first use)
+### 7.2 New Tab & Route
 
-### 7.3 LiveKit Room Connection
+**TopBar Integration:**
+- Add third tab "Voice Agent" to `TopBar.tsx` tabs array
+- Route: `/voice` → `web/app/voice/page.tsx`
+- Match existing tab styling and navigation patterns
 
-**Connection flow:**
+**Page Component:**
+- Create `web/app/voice/page.tsx` that renders `<VoicePanel />`
+- Similar structure to `web/app/page.tsx` (Graph Q&A)
+
+### 7.3 State Management
+
+**Add Voice State to AppContext:**
+- Extend `AppContext.tsx` with `voiceState` similar to `graphState` and `hypothesisState`
+- Persist to localStorage with key `oncograph_voice_state`
+- State structure:
+
+```typescript
+type VoiceState = {
+  isConnected: boolean;
+  isListening: boolean;
+  isAgentSpeaking: boolean;
+  roomName: string | null;
+  userTranscript: string | null;        // Current user speech transcript
+  agentResponse: string | null;          // Agent's spoken response text
+  toolResult: OncoGraphToolResult | null; // Latest tool call result
+  error: string | null;
+  connectionHistory: Array<{           // History of tool calls/responses
+    timestamp: number;
+    userTranscript: string;
+    agentResponse: string;
+    toolResult: OncoGraphToolResult | null;
+  }>;
+};
+```
+
+**State Persistence:**
+- Save to localStorage on state changes (like Graph Q&A)
+- Load from localStorage on mount
+- Clear state on "Clear All" button click
+
+### 7.4 LiveKit Integration
+
+**Connection Flow:**
 1. User clicks "Start Voice" button
-2. Frontend requests LiveKit access token from backend (or generates client-side if using public keys)
-3. Create/join LiveKit room with unique room name (e.g., `voice-{userId}-{timestamp}`)
-4. Connect microphone and subscribe to agent audio tracks
-5. Handle room disconnection and reconnection gracefully
+2. Frontend calls `/api/voice/token` endpoint with room name
+3. Backend generates LiveKit access token and returns it
+4. Frontend connects to LiveKit room using `livekit-client` SDK
+5. Request microphone permission (if not already granted)
+6. Publish microphone track to room
+7. Subscribe to agent audio tracks
+8. Handle connection events (connected, disconnected, reconnecting)
 
-**Token generation:**
-- Option A: Add endpoint to existing FastAPI backend (`/api/voice/token`) that generates LiveKit access tokens
-- Option B: Generate tokens client-side using LiveKit's token generation library (requires API key/secret in frontend, less secure)
-- **Recommendation:** Use backend endpoint for production, client-side for local dev
+**Room Connection Code Pattern:**
+```typescript
+import { Room, RoomEvent, Track } from 'livekit-client';
 
-### 7.4 Audio Handling
+const room = new Room();
+await room.connect(LIVEKIT_URL, token);
 
-**Microphone:**
-- Request microphone permission on first voice session start
-- Handle permission denial gracefully (show message, disable voice button)
-- Use browser's `getUserMedia()` API via LiveKit client SDK
-- Handle microphone disconnection/reconnection
+// Publish microphone
+const micTrack = await LocalAudioTrack.createMicrophoneTrack();
+await room.localParticipant.publishTrack(micTrack);
 
-**Audio playback:**
-- LiveKit client SDK handles agent audio playback automatically
-- Ensure audio is not muted by browser autoplay policies
-- Provide volume control if needed
+// Subscribe to agent audio
+room.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
+  if (participant.kind === 'agent' && track.kind === 'audio') {
+    // Attach audio track to HTML audio element
+    track.attach(audioElement);
+  }
+});
+```
 
-### 7.5 State Management
+**Connection States:**
+- `disconnected` → Show "Start Voice" button
+- `connecting` → Show "Connecting..." with spinner
+- `connected` → Show "Connected" with mic button active
+- `reconnecting` → Show "Reconnecting..." with retry option
+- `disconnected` (error) → Show error message with retry button
 
-**Voice session state:**
-- `isConnected`: Whether connected to LiveKit room
-- `isListening`: Whether microphone is active and listening
-- `isAgentSpeaking`: Whether agent is currently speaking
-- `transcript`: Current user transcript (optional, for debugging)
-- `error`: Connection/audio errors
+### 7.5 Backend Token Endpoint
 
-**Integration with existing state:**
-- Consider adding voice state to `AppContext.tsx` if shared across components
-- Or keep voice state local to voice component if isolated
+**Endpoint:** `POST /api/voice/token`
 
-### 7.6 Backend Integration (Optional)
+**Request:**
+```json
+{
+  "room_name": "voice-user123-1234567890",
+  "user_identity": "user123"
+}
+```
 
-**If adding token endpoint:**
-- Add `/api/voice/token` endpoint to FastAPI backend
-- Generate LiveKit access tokens server-side using LiveKit SDK
-- Include user identity, room name, and permissions in token
-- Return token to frontend for room connection
+**Response:**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "url": "wss://your-project.livekit.cloud"
+}
+```
 
-**Environment variables:**
-- `LIVEKIT_URL`: LiveKit server URL (local dev or LiveKit Cloud)
-- `LIVEKIT_API_KEY`: LiveKit API key
-- `LIVEKIT_API_SECRET`: LiveKit API secret
+**Implementation (FastAPI):**
+- Use `livekit` Python SDK to generate access tokens
+- Include permissions: `canPublish`, `canSubscribe`, `canPublishData`
+- Set expiration: 1 hour (or configurable)
+- Environment variables: `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`
 
-### 7.7 Testing Strategy
+### 7.6 Payload Transformation Utility
 
-**Local testing:**
+**File:** `web/app/utils/voicePayloadToRows.ts`
+
+**Function:** `payloadToMiniGraphRows(payload: Payload): Array<Record<string, unknown>>`
+
+Transform tool payloads into MiniGraph-compatible row format. MiniGraph expects rows with fields like `gene_symbol`, `therapy_name`, `variant_name`, `effect`, `disease_name`, `targets_moa`, `relationship`, `evidence_levels`, `evidence_count`.
+
+**Transformation Mappings:**
+
+**1. `resistance_biomarkers_query` & `sensitivity_biomarkers_query`:**
+```typescript
+payload.top_genes.map(gene => ({
+  gene_symbol: gene.gene,
+  therapy_name: payload.therapy,
+  disease_name: payload.disease || null,
+  effect: intent === "resistance_biomarkers_query" ? "resistance" : "sensitivity",
+  evidence_levels: gene.best_level ? [gene.best_level] : [],
+  evidence_count: gene.evidence_count || 0,
+  total_genes: payload.total_genes,  // Metadata
+}))
+```
+
+**2. `therapy_targets_query`:**
+```typescript
+payload.targets.map(target => ({
+  therapy_name: payload.therapy,
+  gene_symbol: target.gene,
+  targets_moa: target.moa || null,
+  relationship: "TARGETS",
+  total_targets: payload.total_targets,  // Metadata
+}))
+```
+
+**3. `gene_targeting_therapies_query`:**
+```typescript
+payload.therapies.map(therapy => ({
+  gene_symbol: payload.gene,
+  therapy_name: therapy.therapy,
+  targets_moa: therapy.moa || null,
+  relationship: "TARGETS",
+  total_therapies: payload.total_therapies,  // Metadata
+}))
+```
+
+**4. `gene_variants_query`:**
+```typescript
+payload.top_variants.map(variant => ({
+  gene_symbol: payload.gene,
+  variant_name: variant.variant,
+  evidence_levels: variant.best_level ? [variant.best_level] : [],
+  evidence_count: variant.evidence_count || 0,
+  total_variants: payload.total_variants,  // Metadata
+}))
+```
+
+**5. `variant_response_query`:**
+```typescript
+payload.results.map(result => ({
+  variant_name: payload.variant,
+  therapy_name: payload.therapy,
+  disease_name: result.disease || null,
+  effect: result.effect,  // "sensitivity" or "resistance"
+  evidence_levels: result.best_level ? [result.best_level] : [],
+  evidence_count: result.evidence_count || 0,
+}))
+```
+
+**6. `gene_overview_query`:**
+```typescript
+// Return empty array - summary stats only, no relationships to visualize
+// Show placeholder message: "Summary statistics only - no graph visualization available"
+[]
+```
+
+**7. `therapy_overview_query`:**
+```typescript
+payload.targets.map(target => ({
+  therapy_name: payload.therapy,
+  gene_symbol: target.gene,
+  targets_moa: target.moa || null,
+  relationship: "TARGETS",
+  target_count: payload.target_count,  // Metadata
+  biomarker_count: payload.biomarker_count,  // Metadata
+}))
+```
+
+**8. `disease_biomarkers_query`:**
+```typescript
+payload.top_genes.map(gene => ({
+  gene_symbol: gene.gene,
+  disease_name: payload.disease,
+  evidence_levels: gene.best_level ? [gene.best_level] : [],
+  evidence_count: gene.evidence_count || 0,
+  total_genes: payload.total_genes,  // Metadata
+  // Note: No therapy or effect - these are disease-level biomarkers
+  // MiniGraph will show disease → gene nodes (no AFFECTS_RESPONSE_TO edges)
+}))
+```
+
+**9. `disease_therapies_query`:**
+```typescript
+// Return empty array - therapy list with counts only, no relationships to visualize
+// Show placeholder message: "Summary statistics only - no graph visualization available"
+[]
+```
+
+**Special Handling:**
+- Transform all items in `top_*` arrays (up to 5 max) for visualization
+- Store `evidence_levels` as array format `string[]` (even if payload has single `best_level`)
+- Include metadata fields (`total_genes`, `total_therapies`, etc.) in rows
+- For empty/no-visualization cases, return empty array and show placeholder message in UI
+
+### 7.7 UI Layout (Matching GraphPanel Style)
+
+**VoicePanel Component Structure:**
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ Voice Controls (Top Bar)                                │
+│ [Mic Button] [Connection Status] [Transcript]            │
+└─────────────────────────────────────────────────────────┘
+│                                                           │
+│ Agent Response Card (Full Width)                        │
+│ ┌─────────────────────────────────────────────────────┐ │
+│ │ Question: "What causes resistance to cetuximab?"    │ │
+│ │ Answer: "KRAS, BRAF, and PIK3CA predict resistance │ │
+│ │          to cetuximab with Level A evidence..."      │ │
+│ └─────────────────────────────────────────────────────┘ │
+│                                                           │
+│ ┌──────────────────────┬──────────────────────────────┐ │
+│ │ Interactive Subgraph │ Raw Results (JSON)          │ │
+│ │                      │                              │ │
+│ │   [MiniGraph]        │ {                            │ │
+│ │                      │   "status": "ok",            │ │
+│ │                      │   "payload": {...}           │ │
+│ │                      │ }                            │ │
+│ └──────────────────────┴──────────────────────────────┘ │
+```
+
+**Component Breakdown:**
+
+**VoiceControls (Top Section):**
+- Microphone button (toggle mute/unmute, visual feedback)
+- Connection status indicator (connected/disconnected/connecting)
+- User transcript display (real-time, optional)
+- Agent speaking indicator (waveform or spinner)
+
+**Agent Response Card:**
+- Display user's question (from transcript)
+- Display agent's spoken response (from agent response text)
+- Match GraphPanel's "Answer" card styling
+
+**VoiceResults (Bottom Section):**
+- Left column: MiniGraph visualization (reuse existing `MiniGraph` component)
+- Right column: Raw JSON payload (expandable/collapsible, syntax-highlighted)
+- Show placeholder message if no visualization available (`gene_overview_query`, `disease_therapies_query`)
+
+**Styling:**
+- Match existing GraphPanel card styles, layout-row, layout-column classes
+- Use same color scheme, fonts, spacing as Graph Q&A tab
+- Responsive design (stack columns on mobile)
+
+### 7.8 Tool Result Display
+
+**Capturing Tool Results:**
+- Listen to LiveKit data channel messages or room events
+- When agent calls `oncograph_query` tool, capture the result
+- Store in `voiceState.toolResult` and `voiceState.connectionHistory`
+
+**Display Logic:**
+- If `toolResult.status === "ok"` and `toolResult.payload` exists:
+  - Transform payload to rows using `payloadToMiniGraphRows()`
+  - Pass rows to `MiniGraph` component
+  - Display raw JSON in right column
+- If `toolResult.status === "no_results"`:
+  - Show message: `toolResult.message` or "No results found"
+  - No graph visualization
+- If `toolResult.status === "needs_clarification"`:
+  - Show clarification message
+  - No graph visualization
+- If `toolResult.status === "not_supported"` or `"error"`:
+  - Show error message
+  - No graph visualization
+
+**History:**
+- Store each tool call in `connectionHistory` array
+- Allow user to browse previous queries/results (optional, can add later)
+
+### 7.9 Error Handling
+
+**Connection Errors:**
+- Network failures: Show "Connection failed. Please check your internet and try again."
+- Token generation failures: Show "Failed to start voice session. Please try again."
+- Microphone permission denied: Show "Microphone access denied. Please enable microphone permissions in your browser."
+- Room connection timeout: Show "Connection timeout. Please try again."
+
+**Agent Errors:**
+- Agent disconnection: Show "Agent disconnected. Reconnecting..." with auto-retry
+- Agent not found: Show "Agent not available. Please try again later."
+- Tool execution errors: Display `toolResult.message` if available
+
+**Recovery:**
+- Provide "Retry" button for failed connections
+- Auto-reconnect on network recovery (if supported by LiveKit SDK)
+- Clear error state on successful reconnection
+
+### 7.10 Testing Strategy
+
+**Local Testing Setup:**
 1. Run voice agent locally: `python -m voice_agent.voice_server dev`
-2. Run frontend locally: `cd web && npm run dev`
-3. Connect frontend to local LiveKit instance (or LiveKit Cloud for testing)
-4. Test voice queries end-to-end
+2. Run FastAPI backend: `python -m api.main` (or existing startup command)
+3. Run frontend: `cd web && npm run dev`
+4. Navigate to `/voice` tab in browser
+5. Test voice queries end-to-end
 
-**Test cases:**
-- [ ] Voice button toggles connection
-- [ ] Microphone permission request works
-- [ ] User speech is transcribed and sent to agent
-- [ ] Agent responses are played back correctly
+**Test Cases:**
+- [ ] Voice tab appears in TopBar navigation
+- [ ] VoicePanel renders correctly on `/voice` route
+- [ ] "Start Voice" button requests microphone permission
+- [ ] Token endpoint generates valid LiveKit tokens
+- [ ] Frontend connects to LiveKit room successfully
+- [ ] Microphone audio is published to room
+- [ ] Agent audio is received and played back
+- [ ] User speech transcript appears in UI
+- [ ] Agent responses appear in UI
+- [ ] Tool call results are captured and displayed
+- [ ] MiniGraph visualization renders correctly for all 10 query types
+- [ ] Raw JSON payload displays correctly
+- [ ] Empty results show appropriate placeholder messages
 - [ ] Connection errors are handled gracefully
-- [ ] Multiple voice sessions don't conflict
-- [ ] UI matches existing OncoGraph design
+- [ ] State persists to localStorage
+- [ ] "Clear All" button clears voice state
+- [ ] UI matches existing OncoGraph design system
+
+**Query Type Coverage:**
+Test all 10 query types:
+1. `resistance_biomarkers_query`
+2. `sensitivity_biomarkers_query`
+3. `therapy_targets_query`
+4. `gene_targeting_therapies_query`
+5. `gene_variants_query`
+6. `variant_response_query`
+7. `gene_overview_query` (placeholder message)
+8. `therapy_overview_query`
+9. `disease_biomarkers_query`
+10. `disease_therapies_query` (placeholder message)
 
 ### Done When
-- [ ] Voice UI component added to OncoGraph frontend
-- [ ] Users can start/stop voice sessions from the web app
-- [ ] Voice queries work end-to-end (speech → agent → response)
-- [ ] UI provides clear feedback for all states
-- [ ] Error handling covers common failure modes
+- [ ] Voice tab added to TopBar navigation
+- [ ] `/voice` route and `VoicePanel` component created
+- [ ] `voiceState` added to `AppContext` with localStorage persistence
+- [ ] `/api/voice/token` endpoint implemented in FastAPI backend
+- [ ] LiveKit client SDK integrated (`livekit-client` installed)
+- [ ] Room connection, microphone publishing, and audio subscription working
+- [ ] `payloadToMiniGraphRows()` utility function implemented with all 10 query type mappings
+- [ ] Tool results captured and displayed (MiniGraph + raw JSON)
+- [ ] UI matches GraphPanel styling and layout
+- [ ] Error handling covers all failure modes
+- [ ] All 10 query types tested end-to-end
+- [ ] State persistence working correctly
 - [ ] Local demo works without LiveKit Cloud deployment
 
 ### Implementation Notes
 
-- **LiveKit Client SDK:** Use `livekit-client` npm package or `@livekit/components-react` for React integration
-- **Room naming:** Use unique room names to avoid conflicts (e.g., `voice-{userId}-{timestamp}`)
-- **Token security:** For production, generate tokens server-side; for local dev, client-side is acceptable
-- **Design consistency:** Match existing OncoGraph UI patterns (see `GraphPanel.tsx`, `TopBar.tsx` for reference)
+- **LiveKit Connection:** Frontend connects to LiveKit Cloud SFU, agent runs locally via `voice_server dev`
+- **Token Security:** Always use backend endpoint for token generation (never expose API secret in frontend)
+- **Payload Transformation:** Transform all items (up to 5) for visualization, regardless of `speak_top_n`
+- **State Persistence:** Use same localStorage pattern as Graph Q&A (`oncograph_voice_state` key)
+- **Design Consistency:** Match GraphPanel card styles, layout-row, layout-column classes exactly
+- **Error Messages:** Keep user-friendly, no technical jargon or stack traces
+- **Microphone Permissions:** Request on first use, handle denial gracefully with clear instructions
 
 ---
 
