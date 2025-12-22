@@ -3,7 +3,6 @@
 import asyncio
 import json
 import logging
-import os
 
 from dotenv import load_dotenv
 
@@ -51,4 +50,3 @@ async def test_tool():
 
 if __name__ == "__main__":
     asyncio.run(test_tool())
-
