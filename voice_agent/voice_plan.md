@@ -41,11 +41,13 @@ The system is designed for low latency (<2 seconds for template-matched queries)
 - Update all templates and tests to use new payload structure
 - Location: `voice_agent/contracts.py`, `voice_agent/handler.py`, `voice_agent/templates/formatters.py`
 
-**⏳ Stage 6: Wire in LiveKit (Voice MVP)** - Not Started
-- Integrate LiveKit agent framework
-- Connect Gemini Flash as conversational LLM
-- Register OncoGraph tool for function calling
-- Add Deepgram STT and Cartesia TTS
+**✅ Stage 6: Wire in LiveKit (Voice MVP)** - COMPLETE
+- Integrated LiveKit agent framework (`voice_agent/voice_server.py`)
+- Connected Gemini Flash Lite as conversational LLM via LiveKit Inference
+- Registered OncoGraph tool (`oncograph_query`) for function calling
+- Added Deepgram STT (Nova-3) and Cartesia TTS (Sonic-3) via LiveKit Inference
+- Configured logging to suppress verbose third-party DEBUG logs
+- Tested end-to-end: agent successfully processes voice queries and calls tool
 
 
 
@@ -880,7 +882,7 @@ Test all 10 template types plus edge cases before adding voice.
 
 ## Stage 5: Convert Fast Path to a Tool (Structured, Intent-Specific Output)
 
-**Status:** ⏳ Not Started
+**Status:** ✅ COMPLETE
 
 **Goal:** Make your existing router/templates/Neo4j executor callable as a single **tool** that returns small, intent-specific structured JSON. Gemini Flash (the conversational agent) decides when to call it and how to speak.
 
@@ -1393,6 +1395,8 @@ Output:
 
 ## Stage 6: Wire in LiveKit (Voice MVP)
 
+**Status:** ✅ COMPLETE
+
 **Goal:** Put the “Gemini Flash + oncograph_query tool” loop behind realtime voice using LiveKit Agents, LiveKit Cloud, and LiveKit Inference (Gemini LLM, Deepgram STT, Cartesia TTS).
 
 ### 6.1 Architecture & Hosting (LiveKit Cloud + direct Neo4j)
@@ -1484,9 +1488,21 @@ This matches LiveKit’s standard model: the agent is a normal Python process (o
 - Do **not** expose internal logs or stack traces to the LLM or to the user.
 
 ### Done When
-- [ ] You can join a LiveKit room and ask at least one query per template type by voice
-- [ ] Latency feels okay (fast path <2s, otherwise short acknowledgement)
-- [ ] Clarifications work naturally via Gemini + tool status
+- [x] You can join a LiveKit room and ask at least one query per template type by voice
+- [x] Latency feels okay (fast path <2s, otherwise short acknowledgement)
+- [x] Clarifications work naturally via Gemini + tool status
+
+### Implementation Notes
+
+- **Agent Server**: Created `voice_agent/voice_server.py` with `AgentServer` and `@server.rtc_session()` entrypoint
+- **Tool Definition**: Implemented `oncograph_query` as `@function_tool()` that calls `handle_query()` and returns `OncoGraphToolResult` as dict
+- **Models via LiveKit Inference**:
+  - LLM: `google/gemini-2.5-flash-lite`
+  - STT: `deepgram/nova-3:en`
+  - TTS: `cartesia/sonic-3:9626c31c-bec5-4cca-baa8-f8ba9e84c8bc`
+- **System Instructions**: Comprehensive prompt covering tool usage, status handling, and voice constraints
+- **Logging Configuration**: Suppressed verbose DEBUG logs from Neo4j, httpx, and other third-party libraries while keeping INFO logs for agent lifecycle and query processing
+- **Testing**: Created `voice_agent/test_tool_local.py` to test tool function independently; verified end-to-end voice queries work correctly
 
 
 ---
