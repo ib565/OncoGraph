@@ -13,5 +13,9 @@ class QueryTemplate(BaseModel):
     required_entities: list[str]  # must be present to execute
     optional_entities: list[str]  # enhance query if present
     cypher: str  # Cypher query with {entity} placeholders
-    format_response: Callable[[list[dict[str, object]], dict[str, str | None], int], str]  # formatter function
+    # Payload builder: returns a Pydantic model instance or None when there are no results.
+    format_response: Callable[
+        [list[dict[str, object]], dict[str, str | None], int],
+        BaseModel | None,
+    ]
 

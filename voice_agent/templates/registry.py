@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 from voice_agent.templates.formatters import (
-    disease_biomarkers_formatter,
-    disease_therapies_formatter,
-    gene_overview_formatter,
-    gene_targeting_therapies_formatter,
-    gene_variants_formatter,
-    resistance_biomarkers_formatter,
-    sensitivity_biomarkers_formatter,
-    therapy_overview_formatter,
-    therapy_targets_formatter,
-    variant_response_formatter,
+    build_disease_biomarkers_payload,
+    build_disease_therapies_payload,
+    build_gene_overview_payload,
+    build_gene_targeting_therapies_payload,
+    build_gene_variants_payload,
+    build_resistance_biomarkers_payload,
+    build_sensitivity_biomarkers_payload,
+    build_therapy_overview_payload,
+    build_therapy_targets_payload,
+    build_variant_response_payload,
 )
 from voice_agent.templates.models import QueryTemplate
 
@@ -251,7 +251,7 @@ TEMPLATES: dict[str, QueryTemplate] = {
         required_entities=["therapy"],
         optional_entities=["disease"],
         cypher=RESISTANCE_BIOMARKERS_CYPHER.strip(),
-        format_response=resistance_biomarkers_formatter,
+        format_response=build_resistance_biomarkers_payload,
     ),
     "sensitivity_biomarkers_query": QueryTemplate(
         id="sensitivity_biomarkers_query",
@@ -259,7 +259,7 @@ TEMPLATES: dict[str, QueryTemplate] = {
         required_entities=["therapy"],
         optional_entities=["disease"],
         cypher=SENSITIVITY_BIOMARKERS_CYPHER.strip(),
-        format_response=sensitivity_biomarkers_formatter,
+        format_response=build_sensitivity_biomarkers_payload,
     ),
     "therapy_targets_query": QueryTemplate(
         id="therapy_targets_query",
@@ -267,7 +267,7 @@ TEMPLATES: dict[str, QueryTemplate] = {
         required_entities=["therapy"],
         optional_entities=[],
         cypher=THERAPY_TARGETS_CYPHER.strip(),
-        format_response=therapy_targets_formatter,
+        format_response=build_therapy_targets_payload,
     ),
     "gene_targeting_therapies_query": QueryTemplate(
         id="gene_targeting_therapies_query",
@@ -275,7 +275,7 @@ TEMPLATES: dict[str, QueryTemplate] = {
         required_entities=["gene"],
         optional_entities=[],
         cypher=GENE_TARGETING_THERAPIES_CYPHER.strip(),
-        format_response=gene_targeting_therapies_formatter,
+        format_response=build_gene_targeting_therapies_payload,
     ),
     "gene_variants_query": QueryTemplate(
         id="gene_variants_query",
@@ -283,7 +283,7 @@ TEMPLATES: dict[str, QueryTemplate] = {
         required_entities=["gene"],
         optional_entities=[],
         cypher=GENE_VARIANTS_CYPHER.strip(),
-        format_response=gene_variants_formatter,
+        format_response=build_gene_variants_payload,
     ),
     "variant_response_query": QueryTemplate(
         id="variant_response_query",
@@ -291,7 +291,7 @@ TEMPLATES: dict[str, QueryTemplate] = {
         required_entities=["variant", "therapy"],
         optional_entities=[],
         cypher=VARIANT_RESPONSE_CYPHER.strip(),
-        format_response=variant_response_formatter,
+        format_response=build_variant_response_payload,
     ),
     "gene_overview_query": QueryTemplate(
         id="gene_overview_query",
@@ -299,7 +299,7 @@ TEMPLATES: dict[str, QueryTemplate] = {
         required_entities=["gene"],
         optional_entities=[],
         cypher=GENE_OVERVIEW_CYPHER.strip(),
-        format_response=gene_overview_formatter,
+        format_response=build_gene_overview_payload,
     ),
     "therapy_overview_query": QueryTemplate(
         id="therapy_overview_query",
@@ -307,7 +307,7 @@ TEMPLATES: dict[str, QueryTemplate] = {
         required_entities=["therapy"],
         optional_entities=[],
         cypher=THERAPY_OVERVIEW_CYPHER.strip(),
-        format_response=therapy_overview_formatter,
+        format_response=build_therapy_overview_payload,
     ),
     "disease_biomarkers_query": QueryTemplate(
         id="disease_biomarkers_query",
@@ -315,7 +315,7 @@ TEMPLATES: dict[str, QueryTemplate] = {
         required_entities=["disease"],
         optional_entities=[],
         cypher=DISEASE_BIOMARKERS_CYPHER.strip(),
-        format_response=disease_biomarkers_formatter,
+        format_response=build_disease_biomarkers_payload,
     ),
     "disease_therapies_query": QueryTemplate(
         id="disease_therapies_query",
@@ -323,6 +323,6 @@ TEMPLATES: dict[str, QueryTemplate] = {
         required_entities=["disease"],
         optional_entities=[],
         cypher=DISEASE_THERAPIES_CYPHER.strip(),
-        format_response=disease_therapies_formatter,
+        format_response=build_disease_therapies_payload,
     ),
 }

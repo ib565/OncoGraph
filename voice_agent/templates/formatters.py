@@ -1,36 +1,17 @@
 from __future__ import annotations
 
-# Number words for voice-friendly output
-_NUMBER_WORDS = {
-    0: "zero",
-    1: "one",
-    2: "two",
-    3: "three",
-    4: "four",
-    5: "five",
-    6: "six",
-    7: "seven",
-    8: "eight",
-    9: "nine",
-    10: "ten",
-    11: "eleven",
-    12: "twelve",
-    13: "thirteen",
-    14: "fourteen",
-    15: "fifteen",
-    16: "sixteen",
-    17: "seventeen",
-    18: "eighteen",
-    19: "nineteen",
-    20: "twenty",
-}
-
-
-def _number_to_word(n: int) -> str:
-    """Convert number to word for voice-friendly output."""
-    if n <= 20:
-        return _NUMBER_WORDS.get(n, str(n))
-    return str(n)
+from voice_agent.contracts import (
+    DiseaseBiomarkersPayload,
+    DiseaseTherapiesPayload,
+    GeneOverviewPayload,
+    GeneTargetingTherapiesPayload,
+    GeneVariantsPayload,
+    ResistanceBiomarkersPayload,
+    SensitivityBiomarkersPayload,
+    TherapyOverviewPayload,
+    TherapyTargetsPayload,
+    VariantResponsePayload,
+)
 
 
 def _clean_value(value: object) -> str:
@@ -42,437 +23,391 @@ def _clean_value(value: object) -> str:
     return str(value)
 
 
-def _get_evidence_level_text(level: str | None) -> str:
-    """Get evidence level text for voice output."""
-    if not level:
-        return ""
-    level_upper = level.upper()
-    if level_upper in ("A", "B"):
-        return f"Level {level_upper} evidence"
-    return f"Level {level_upper} evidence"
+def _cap_items(items: list[dict[str, object]], speak_top_n: int) -> list[dict[str, object]]:
+    """Return at most min(speak_top_n, 5) items from a list."""
+    limit = min(max(speak_top_n, 1), 5)
+    return items[:limit]
 
 
-def _format_gene_list(genes: list[str], max_items: int = 3) -> str:
-    """Format a list of genes for voice output."""
-    if not genes:
-        return ""
-    if len(genes) <= max_items:
-        if len(genes) == 1:
-            return genes[0]
-        if len(genes) == 2:
-            return f"{genes[0]} and {genes[1]}"
-        # 3 items: "X, Y, and Z"
-        return ", ".join(genes[:-1]) + f", and {genes[-1]}"
-    # More than max_items: "X, Y, Z, and N others"
-    listed = genes[:max_items]
-    others_count = len(genes) - max_items
-    return ", ".join(listed) + f", and {_number_to_word(others_count)} others"
-
-
-def resistance_biomarkers_formatter(
+def build_resistance_biomarkers_payload(
     results: list[dict[str, object]],
     entities: dict[str, str | None],
-    max_items_to_list: int = 3,
-) -> str:
-    """Format resistance biomarkers query results."""
-    therapy = entities.get("therapy", "this therapy") or "this therapy"
-
+    speak_top_n: int = 3,
+) -> ResistanceBiomarkersPayload | None:
+    """Build payload for resistance biomarkers query. Returns None if no results."""
     if not results:
-        return f"I didn't find resistance biomarkers for {therapy}."
+        return None
 
-    # Extract genes and evidence
-    genes = []
-    evidence_info = []
+    therapy = entities.get("therapy") or "this therapy"
+    disease = entities.get("disease")
+
+    top_genes: list[dict[str, str | int | None]] = []
     for row in results:
         gene = _clean_value(row.get("gene_symbol"))
-        if gene:
-            genes.append(gene)
-            level = _clean_value(row.get("best_evidence_level"))
-            count = row.get("evidence_count", 0)
-            if isinstance(count, (int, float)) and count > 0:
-                evidence_info.append((gene, level, int(count)))
-
-    if not genes:
-        return f"I didn't find resistance biomarkers for {therapy}."
-
-    # Build response
-    gene_list = _format_gene_list(genes, max_items_to_list)
-    total = len(genes)
-
-    # Check for strong evidence (A/B)
-    strong_evidence = [g for g, l, _ in evidence_info if l and l.upper() in ("A", "B")]
-    if strong_evidence and total <= max_items_to_list:
-        level_text = _get_evidence_level_text(evidence_info[0][1] if evidence_info else None)
-        if level_text:
-            return f"Found {_number_to_word(total)} gene{'s' if total > 1 else ''} predicting resistance to {therapy}: {gene_list}, with {level_text.lower()}."
-        return f"Found {_number_to_word(total)} gene{'s' if total > 1 else ''} predicting resistance to {therapy}: {gene_list}."
-
-    if total > max_items_to_list:
-        return f"Found {_number_to_word(total)} genes predicting resistance to {therapy}. Top ones are {gene_list}. Want pathway enrichment?"
-
-    return f"Found {_number_to_word(total)} gene{'s' if total > 1 else ''} predicting resistance to {therapy}: {gene_list}."
-
-
-def sensitivity_biomarkers_formatter(
-    results: list[dict[str, object]],
-    entities: dict[str, str | None],
-    max_items_to_list: int = 3,
-) -> str:
-    """Format sensitivity biomarkers query results."""
-    therapy = entities.get("therapy", "this therapy") or "this therapy"
-
-    if not results:
-        return f"I didn't find sensitivity biomarkers for {therapy}."
-
-    # Extract genes and evidence
-    genes = []
-    evidence_info = []
-    for row in results:
-        gene = _clean_value(row.get("gene_symbol"))
-        if gene:
-            genes.append(gene)
-            level = _clean_value(row.get("best_evidence_level"))
-            count = row.get("evidence_count", 0)
-            if isinstance(count, (int, float)) and count > 0:
-                evidence_info.append((gene, level, int(count)))
-
-    if not genes:
-        return f"I didn't find sensitivity biomarkers for {therapy}."
-
-    # Build response
-    gene_list = _format_gene_list(genes, max_items_to_list)
-    total = len(genes)
-
-    # Check for strong evidence (A/B)
-    strong_evidence = [g for g, l, _ in evidence_info if l and l.upper() in ("A", "B")]
-    if strong_evidence and total <= max_items_to_list:
-        level_text = _get_evidence_level_text(evidence_info[0][1] if evidence_info else None)
-        if level_text:
-            return f"Found {_number_to_word(total)} gene{'s' if total > 1 else ''} predicting sensitivity to {therapy}: {gene_list}, with {level_text.lower()}."
-        return f"Found {_number_to_word(total)} gene{'s' if total > 1 else ''} predicting sensitivity to {therapy}: {gene_list}."
-
-    if total > max_items_to_list:
-        return f"Found {_number_to_word(total)} genes predicting sensitivity to {therapy}. Top ones are {gene_list}. Want pathway enrichment?"
-
-    return f"Found {_number_to_word(total)} gene{'s' if total > 1 else ''} predicting sensitivity to {therapy}: {gene_list}."
-
-
-def therapy_targets_formatter(
-    results: list[dict[str, object]],
-    entities: dict[str, str | None],
-    max_items_to_list: int = 3,
-) -> str:
-    """Format therapy targets query results."""
-    therapy = entities.get("therapy", "this therapy") or "this therapy"
-
-    if not results:
-        return f"I didn't find target genes for {therapy}."
-
-    # Extract genes and mechanisms
-    targets = []
-    for row in results:
-        gene = _clean_value(row.get("gene_symbol"))
-        moa = _clean_value(row.get("targets_moa"))
-        if gene:
-            targets.append((gene, moa))
-
-    if not targets:
-        return f"I didn't find target genes for {therapy}."
-
-    if len(targets) == 1:
-        gene, moa = targets[0]
-        if moa:
-            return f"{therapy} targets {gene} as a {moa}."
-        return f"{therapy} targets {gene}."
-
-    gene_list = _format_gene_list([g for g, _ in targets], max_items_to_list)
-    total = len(targets)
-    return f"{therapy} targets {_number_to_word(total)} genes: {gene_list}."
-
-
-def gene_targeting_therapies_formatter(
-    results: list[dict[str, object]],
-    entities: dict[str, str | None],
-    max_items_to_list: int = 3,
-) -> str:
-    """Format gene targeting therapies query results."""
-    gene = entities.get("gene", "this gene") or "this gene"
-
-    if not results:
-        return f"I didn't find therapies targeting {gene}."
-
-    # Extract therapies
-    therapies = []
-    mechanisms = []
-    for row in results:
-        therapy = _clean_value(row.get("therapy_name"))
-        moa = _clean_value(row.get("targets_moa"))
-        if therapy:
-            therapies.append(therapy)
-            if moa:
-                mechanisms.append(moa)
-
-    if not therapies:
-        return f"I didn't find therapies targeting {gene}."
-
-    therapy_list = _format_gene_list(therapies, max_items_to_list)
-    total = len(therapies)
-
-    # Check if all have same mechanism
-    unique_mechanisms = set(m for m in mechanisms if m)
-    if len(unique_mechanisms) == 1 and unique_mechanisms:
-        mechanism = list(unique_mechanisms)[0]
-        return f"{_number_to_word(total)} therap{'ies' if total > 1 else 'y'} target{'s' if total == 1 else ''} {gene}: {therapy_list}. All are {mechanism}s."
-
-    return f"{_number_to_word(total)} therap{'ies' if total > 1 else 'y'} target{'s' if total == 1 else ''} {gene}: {therapy_list}."
-
-
-def gene_variants_formatter(
-    results: list[dict[str, object]],
-    entities: dict[str, str | None],
-    max_items_to_list: int = 3,
-) -> str:
-    """Format gene variants query results."""
-    gene = entities.get("gene", "this gene") or "this gene"
-
-    if not results:
-        return f"{gene} has no variants with clinical evidence in the database."
-
-    # Extract variants
-    variants = []
-    for row in results:
-        variant = _clean_value(row.get("variant_name"))
-        if variant:
-            variants.append(variant)
-
-    if not variants:
-        return f"{gene} has no variants with clinical evidence in the database."
-
-    variant_list = _format_gene_list(variants, max_items_to_list)
-    total = len(variants)
-
-    if total > max_items_to_list:
-        return f"{gene} has {_number_to_word(total)} variants with evidence. Most studied are {variant_list}."
-
-    return f"{gene} has {_number_to_word(total)} variant{'s' if total > 1 else ''} with evidence: {variant_list}."
-
-
-def variant_response_formatter(
-    results: list[dict[str, object]],
-    entities: dict[str, str | None],
-    max_items_to_list: int = 3,
-) -> str:
-    """Format variant response query results."""
-    variant = entities.get("variant", "this variant") or "this variant"
-    therapy = entities.get("therapy", "this therapy") or "this therapy"
-
-    if not results:
-        return f"I don't have evidence for {variant} affecting {therapy} response."
-
-    # Extract effects
-    effects = []
-    for row in results:
-        effect = _clean_value(row.get("effect"))
-        disease = _clean_value(row.get("disease_name"))
-        level = _clean_value(row.get("best_evidence_level"))
-        if effect:
-            effects.append((effect, disease, level))
-
-    if not effects:
-        return f"I don't have evidence for {variant} affecting {therapy} response."
-
-    # Group by effect type
-    sensitivity = [e for e in effects if e[0].lower() == "sensitivity"]
-    resistance = [e for e in effects if e[0].lower() == "resistance"]
-
-    responses = []
-    if sensitivity:
-        e = sensitivity[0]
-        level_text = _get_evidence_level_text(e[2])
-        disease_text = f" in {e[1]}" if e[1] else ""
-        level_suffix = f" with {level_text.lower()}" if level_text else ""
-        responses.append(f"{variant} predicts sensitivity to {therapy}{disease_text}{level_suffix}")
-
-    if resistance:
-        e = resistance[0]
-        level_text = _get_evidence_level_text(e[2])
-        disease_text = f" in {e[1]}" if e[1] else ""
-        level_suffix = f" with {level_text.lower()}" if level_text else ""
-        responses.append(f"{variant} predicts resistance to {therapy}{disease_text}{level_suffix}")
-
-    if not responses:
-        return f"I don't have evidence for {variant} affecting {therapy} response."
-
-    return ". ".join(responses) + "."
-
-
-def gene_overview_formatter(
-    results: list[dict[str, object]],
-    entities: dict[str, str | None],
-    max_items_to_list: int = 3,
-) -> str:
-    """Format gene overview query results."""
-    gene = entities.get("gene", "this gene") or "this gene"
-
-    if not results or len(results) == 0:
-        return f"{gene} is not in my database."
-
-    row = results[0]
-    variant_count = row.get("variant_count", 0)
-    therapy_count = row.get("therapy_count", 0)
-
-    if isinstance(variant_count, (int, float)):
-        variant_count = int(variant_count)
-    else:
-        variant_count = 0
-
-    if isinstance(therapy_count, (int, float)):
-        therapy_count = int(therapy_count)
-    else:
-        therapy_count = 0
-
-    if variant_count == 0 and therapy_count == 0:
-        return f"{gene} is in my database but has no variants or targeting therapies."
-
-    parts = []
-    if variant_count > 0:
-        parts.append(f"{_number_to_word(variant_count)} variant{'s' if variant_count > 1 else ''}")
-    if therapy_count > 0:
-        parts.append(f"targeted by {_number_to_word(therapy_count)} therap{'ies' if therapy_count > 1 else 'y'}")
-
-    return f"{gene} has {', '.join(parts)} in the database."
-
-
-def therapy_overview_formatter(
-    results: list[dict[str, object]],
-    entities: dict[str, str | None],
-    max_items_to_list: int = 3,
-) -> str:
-    """Format therapy overview query results."""
-    therapy = entities.get("therapy", "this therapy") or "this therapy"
-
-    if not results or len(results) == 0:
-        return f"{therapy} is not in my database."
-
-    # Extract counts from the first row (same for all rows) and collect target genes/MOA.
-    row0 = results[0]
-    target_count = row0.get("target_count", 0)
-    biomarker_count = row0.get("biomarker_count", 0)
-    genes: list[str] = []
-    moas: list[str] = []
-    for row in results:
-        gene = _clean_value(row.get("gene_symbol"))
-        moa = _clean_value(row.get("targets_moa"))
-        if gene and gene not in genes:
-            genes.append(gene)
-        if moa:
-            moas.append(moa)
-
-    if isinstance(target_count, (int, float)):
-        target_count = int(target_count)
-    else:
-        target_count = 0
-
-    if isinstance(biomarker_count, (int, float)):
-        biomarker_count = int(biomarker_count)
-    else:
-        biomarker_count = 0
-
-    parts = []
-    if target_count > 0:
-        gene_list = _format_gene_list(genes, max_items_to_list) if genes else ""
-        if gene_list:
-            parts.append(
-                f"targets {_number_to_word(target_count)} gene{'s' if target_count > 1 else ''}, including {gene_list}"
-            )
-        else:
-            parts.append(f"targets {_number_to_word(target_count)} gene{'s' if target_count > 1 else ''}")
-
-        # If all MOAs are the same and present, mention mechanism class.
-        unique_moas = {m for m in moas if m}
-        if len(unique_moas) == 1:
-            moa = list(unique_moas)[0]
-            parts[-1] += f" as a {moa}"
-
-    if biomarker_count > 0:
-        parts.append(
-            f"has {_number_to_word(biomarker_count)} biomarker association{'s' if biomarker_count > 1 else ''}"
+        if not gene:
+            continue
+        best_level = _clean_value(row.get("best_evidence_level")) or None
+        count_raw = row.get("evidence_count", 0)
+        count = int(count_raw) if isinstance(count_raw, (int, float)) else 0
+        top_genes.append(
+            {
+                "gene": gene,
+                "best_level": best_level,
+                "evidence_count": count,
+            }
         )
 
-    if not parts:
-        return f"{therapy} is in my database but has no target genes or biomarker associations."
+    if not top_genes:
+        return None
 
-    return f"{therapy} {', '.join(parts)}."
+    total_genes = len(top_genes)
+    capped = _cap_items(top_genes, speak_top_n)
+
+    return ResistanceBiomarkersPayload(
+        intent="resistance_biomarkers_query",
+        therapy=therapy,
+        disease=disease,
+        total_genes=total_genes,
+        top_genes=capped,
+    )
 
 
-def disease_biomarkers_formatter(
+def build_sensitivity_biomarkers_payload(
     results: list[dict[str, object]],
     entities: dict[str, str | None],
-    max_items_to_list: int = 3,
-) -> str:
-    """Format disease biomarkers query results."""
-    disease = entities.get("disease", "this disease") or "this disease"
-
+    speak_top_n: int = 3,
+) -> SensitivityBiomarkersPayload | None:
+    """Build payload for sensitivity biomarkers query. Returns None if no results."""
     if not results:
-        return f"I didn't find biomarkers for {disease}."
+        return None
 
-    # Extract genes and evidence
-    genes = []
-    evidence_info = []
+    therapy = entities.get("therapy") or "this therapy"
+    disease = entities.get("disease")
+
+    top_genes: list[dict[str, str | int | None]] = []
     for row in results:
         gene = _clean_value(row.get("gene_symbol"))
-        if gene:
-            genes.append(gene)
-            level = _clean_value(row.get("best_evidence_level"))
-            count = row.get("evidence_count", 0)
-            if isinstance(count, (int, float)) and count > 0:
-                evidence_info.append((gene, level, int(count)))
+        if not gene:
+            continue
+        best_level = _clean_value(row.get("best_evidence_level")) or None
+        count_raw = row.get("evidence_count", 0)
+        count = int(count_raw) if isinstance(count_raw, (int, float)) else 0
+        top_genes.append(
+            {
+                "gene": gene,
+                "best_level": best_level,
+                "evidence_count": count,
+            }
+        )
 
-    if not genes:
-        return f"I didn't find biomarkers for {disease}."
+    if not top_genes:
+        return None
 
-    gene_list = _format_gene_list(genes, max_items_to_list)
-    total = len(genes)
+    total_genes = len(top_genes)
+    capped = _cap_items(top_genes, speak_top_n)
 
-    # Check for strong evidence (A/B)
-    strong_evidence = [g for g, l, _ in evidence_info if l and l.upper() in ("A", "B")]
-    if strong_evidence and total <= max_items_to_list:
-        level_text = _get_evidence_level_text(evidence_info[0][1] if evidence_info else None)
-        if level_text:
-            return f"In {disease}, top biomarkers are {gene_list} with {level_text.lower()}."
-        return f"In {disease}, top biomarkers are {gene_list}."
-
-    if total > max_items_to_list:
-        return f"In {disease}, found {_number_to_word(total)} biomarker genes. Top ones are {gene_list} with Level A evidence."
-
-    return f"In {disease}, top biomarkers are {gene_list}."
+    return SensitivityBiomarkersPayload(
+        intent="sensitivity_biomarkers_query",
+        therapy=therapy,
+        disease=disease,
+        total_genes=total_genes,
+        top_genes=capped,
+    )
 
 
-def disease_therapies_formatter(
+def build_therapy_targets_payload(
     results: list[dict[str, object]],
     entities: dict[str, str | None],
-    max_items_to_list: int = 3,
-) -> str:
-    """Format disease therapies query results."""
-    disease = entities.get("disease", "this disease") or "this disease"
-
+    speak_top_n: int = 3,
+) -> TherapyTargetsPayload | None:
+    """Build payload for therapy targets query. Returns None if no results."""
     if not results:
-        return f"I didn't find therapies with biomarker evidence in {disease}."
+        return None
 
-    # Extract therapies
-    therapies = []
+    therapy = entities.get("therapy") or "this therapy"
+
+    targets: list[dict[str, str | None]] = []
+    for row in results:
+        gene = _clean_value(row.get("gene_symbol"))
+        if not gene:
+            continue
+        moa = _clean_value(row.get("targets_moa")) or None
+        targets.append({"gene": gene, "moa": moa})
+
+    if not targets:
+        return None
+
+    total_targets = len(targets)
+    capped = _cap_items(targets, speak_top_n)
+
+    return TherapyTargetsPayload(
+        intent="therapy_targets_query",
+        therapy=therapy,
+        total_targets=total_targets,
+        targets=capped,
+    )
+
+
+def build_gene_targeting_therapies_payload(
+    results: list[dict[str, object]],
+    entities: dict[str, str | None],
+    speak_top_n: int = 3,
+) -> GeneTargetingTherapiesPayload | None:
+    """Build payload for gene targeting therapies query. Returns None if no results."""
+    if not results:
+        return None
+
+    gene = entities.get("gene") or "this gene"
+
+    therapies: list[dict[str, str | None]] = []
     for row in results:
         therapy = _clean_value(row.get("therapy_name"))
-        if therapy:
-            therapies.append(therapy)
+        if not therapy:
+            continue
+        moa = _clean_value(row.get("targets_moa")) or None
+        therapies.append({"therapy": therapy, "moa": moa})
 
     if not therapies:
-        return f"I didn't find therapies with biomarker evidence in {disease}."
+        return None
 
-    therapy_list = _format_gene_list(therapies, max_items_to_list)
-    total = len(therapies)
+    total_therapies = len(therapies)
+    capped = _cap_items(therapies, speak_top_n)
 
-    if total > max_items_to_list:
-        return f"In {disease}, therapies with most evidence are {therapy_list}."
+    return GeneTargetingTherapiesPayload(
+        intent="gene_targeting_therapies_query",
+        gene=gene,
+        total_therapies=total_therapies,
+        therapies=capped,
+    )
 
-    return f"In {disease}, therapies with biomarker evidence are {therapy_list}."
+
+def build_gene_variants_payload(
+    results: list[dict[str, object]],
+    entities: dict[str, str | None],
+    speak_top_n: int = 3,
+) -> GeneVariantsPayload | None:
+    """Build payload for gene variants query. Returns None if no results."""
+    if not results:
+        return None
+
+    gene = entities.get("gene") or "this gene"
+
+    variants: list[dict[str, str | int | None]] = []
+    for row in results:
+        variant = _clean_value(row.get("variant_name"))
+        if not variant:
+            continue
+        best_level = _clean_value(row.get("best_evidence_level")) or None
+        count_raw = row.get("evidence_count", 0)
+        count = int(count_raw) if isinstance(count_raw, (int, float)) else 0
+        variants.append(
+            {
+                "variant": variant,
+                "best_level": best_level,
+                "evidence_count": count,
+            }
+        )
+
+    if not variants:
+        return None
+
+    total_variants = len(variants)
+    capped = _cap_items(variants, speak_top_n)
+
+    return GeneVariantsPayload(
+        intent="gene_variants_query",
+        gene=gene,
+        total_variants=total_variants,
+        top_variants=capped,
+    )
+
+
+def build_variant_response_payload(
+    results: list[dict[str, object]],
+    entities: dict[str, str | None],
+    speak_top_n: int = 3,
+) -> VariantResponsePayload | None:
+    """Build payload for variant response query. Returns None if no results."""
+    if not results:
+        return None
+
+    variant = entities.get("variant") or "this variant"
+    therapy = entities.get("therapy") or "this therapy"
+
+    items: list[dict[str, str | int | None]] = []
+    for row in results:
+        effect_raw = _clean_value(row.get("effect"))
+        if not effect_raw:
+            continue
+        effect = effect_raw.lower()
+        if effect not in {"sensitivity", "resistance"}:
+            continue
+        disease = _clean_value(row.get("disease_name")) or None
+        best_level = _clean_value(row.get("best_evidence_level")) or None
+        count_raw = row.get("evidence_count", 0)
+        count = int(count_raw) if isinstance(count_raw, (int, float)) else 0
+        items.append(
+            {
+                "effect": effect,
+                "disease": disease,
+                "best_level": best_level,
+                "evidence_count": count,
+            }
+        )
+
+    if not items:
+        return None
+
+    capped = _cap_items(items, speak_top_n)
+
+    return VariantResponsePayload(
+        intent="variant_response_query",
+        variant=variant,
+        therapy=therapy,
+        results=capped,
+    )
+
+
+def build_gene_overview_payload(
+    results: list[dict[str, object]],
+    entities: dict[str, str | None],
+    speak_top_n: int = 3,  # unused but kept for signature consistency
+) -> GeneOverviewPayload | None:
+    """Build payload for gene overview query. Returns None if gene not found."""
+    if not results:
+        return None
+
+    gene = entities.get("gene") or "this gene"
+
+    row = results[0]
+    variant_count_raw = row.get("variant_count", 0)
+    therapy_count_raw = row.get("therapy_count", 0)
+
+    variant_count = int(variant_count_raw) if isinstance(variant_count_raw, (int, float)) else 0
+    therapy_count = int(therapy_count_raw) if isinstance(therapy_count_raw, (int, float)) else 0
+
+    if variant_count == 0 and therapy_count == 0:
+        # Gene exists but no useful stats; treat as no-results for this payload
+        return None
+
+    return GeneOverviewPayload(
+        intent="gene_overview_query",
+        gene=gene,
+        variant_count=variant_count,
+        therapy_count=therapy_count,
+    )
+
+
+def build_therapy_overview_payload(
+    results: list[dict[str, object]],
+    entities: dict[str, str | None],
+    speak_top_n: int = 3,
+) -> TherapyOverviewPayload | None:
+    """Build payload for therapy overview query. Returns None if therapy not found."""
+    if not results:
+        return None
+
+    therapy = entities.get("therapy") or "this therapy"
+
+    row0 = results[0]
+    target_count_raw = row0.get("target_count", 0)
+    biomarker_count_raw = row0.get("biomarker_count", 0)
+
+    target_count = int(target_count_raw) if isinstance(target_count_raw, (int, float)) else 0
+    biomarker_count = int(biomarker_count_raw) if isinstance(biomarker_count_raw, (int, float)) else 0
+
+    targets: list[dict[str, str | None]] = []
+    for row in results:
+        gene = _clean_value(row.get("gene_symbol"))
+        if not gene:
+            continue
+        moa = _clean_value(row.get("targets_moa")) or None
+        targets.append({"gene": gene, "moa": moa})
+
+    capped_targets = _cap_items(targets, speak_top_n) if targets else []
+
+    if target_count == 0 and biomarker_count == 0 and not capped_targets:
+        return None
+
+    return TherapyOverviewPayload(
+        intent="therapy_overview_query",
+        therapy=therapy,
+        target_count=target_count,
+        biomarker_count=biomarker_count,
+        targets=capped_targets,
+    )
+
+
+def build_disease_biomarkers_payload(
+    results: list[dict[str, object]],
+    entities: dict[str, str | None],
+    speak_top_n: int = 3,
+) -> DiseaseBiomarkersPayload | None:
+    """Build payload for disease biomarkers query. Returns None if no results."""
+    if not results:
+        return None
+
+    disease = entities.get("disease") or "this disease"
+
+    genes: list[dict[str, str | int | None]] = []
+    for row in results:
+        gene = _clean_value(row.get("gene_symbol"))
+        if not gene:
+            continue
+        best_level = _clean_value(row.get("best_evidence_level")) or None
+        count_raw = row.get("evidence_count", 0)
+        count = int(count_raw) if isinstance(count_raw, (int, float)) else 0
+        genes.append(
+            {
+                "gene": gene,
+                "best_level": best_level,
+                "evidence_count": count,
+            }
+        )
+
+    if not genes:
+        return None
+
+    total_genes = len(genes)
+    capped = _cap_items(genes, speak_top_n)
+
+    return DiseaseBiomarkersPayload(
+        intent="disease_biomarkers_query",
+        disease=disease,
+        total_genes=total_genes,
+        top_genes=capped,
+    )
+
+
+def build_disease_therapies_payload(
+    results: list[dict[str, object]],
+    entities: dict[str, str | None],
+    speak_top_n: int = 3,
+) -> DiseaseTherapiesPayload | None:
+    """Build payload for disease therapies query. Returns None if no results."""
+    if not results:
+        return None
+
+    disease = entities.get("disease") or "this disease"
+
+    therapies: list[dict[str, int]] = []
+    for row in results:
+        therapy = _clean_value(row.get("therapy_name"))
+        if not therapy:
+            continue
+        count_raw = row.get("evidence_count", 0)
+        count = int(count_raw) if isinstance(count_raw, (int, float)) else 0
+        therapies.append({"therapy": therapy, "evidence_count": count})
+
+    if not therapies:
+        return None
+
+    total_therapies = len(therapies)
+    capped = _cap_items(therapies, speak_top_n)
+
+    return DiseaseTherapiesPayload(
+        intent="disease_therapies_query",
+        disease=disease,
+        total_therapies=total_therapies,
+        therapies=capped,
+    )

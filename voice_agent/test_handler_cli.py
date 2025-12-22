@@ -8,6 +8,7 @@ Usage:
 
 from __future__ import annotations
 
+import argparse
 import asyncio
 import sys
 
@@ -20,9 +21,22 @@ load_dotenv()
 
 async def main() -> int:
     """Main entry point for CLI."""
-    # Get query from command line argument or stdin
-    if len(sys.argv) > 1:
-        query = " ".join(sys.argv[1:])
+    parser = argparse.ArgumentParser(description="Test the OncoGraph voice handler tool.")
+    parser.add_argument(
+        "query",
+        nargs="*",
+        help="Natural language query. If omitted, read from stdin.",
+    )
+    parser.add_argument(
+        "--speak-top-n",
+        type=int,
+        default=3,
+        help="Maximum number of top items to include in payload lists (default: 3).",
+    )
+    args = parser.parse_args()
+
+    if args.query:
+        query = " ".join(args.query)
     else:
         query = sys.stdin.read().strip()
 
@@ -34,8 +48,8 @@ async def main() -> int:
     print(f"Query: {query}\n")
 
     try:
-        response = await handle_query(query)
-        print(f"Response: {response}")
+        result = await handle_query(query, speak_top_n=args.speak_top_n)
+        print(result.model_dump_json(indent=2))
         return 0
     except KeyboardInterrupt:
         print("\nInterrupted by user", file=sys.stderr)

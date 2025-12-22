@@ -35,7 +35,7 @@ The system is designed for low latency (<2 seconds for template-matched queries)
 - Singleton executor pattern, latency tracking, and test CLI script all complete
 - Location: `voice_agent/handler.py`, `voice_agent/test_handler_cli.py`
 
-**⏳ Stage 5: Convert Fast Path to a Tool** - Not Started
+**✅ Stage 5: Convert Fast Path to a Tool** - COMPLETE
 - Refactor handler to return structured `OncoGraphToolResult` with intent-specific payloads
 - Convert formatters from string generators to payload builders
 - Update all templates and tests to use new payload structure
@@ -1375,18 +1375,18 @@ Output:
 ```
 
 ### Done When
-- [ ] `voice_agent/contracts.py` created with all Pydantic models (Status, VoiceHint, 10 payload models, Payload union, OncoGraphToolResult)
-- [ ] All 10 payload builder functions implemented in `voice_agent/templates/formatters.py`
-- [ ] Old string formatters removed from `voice_agent/templates/formatters.py`
-- [ ] `QueryTemplate.format_response` type signature updated in `voice_agent/templates/models.py`
-- [ ] All templates updated in `voice_agent/templates/registry.py` to use new payload builders
-- [ ] `handle_query` updated to return `OncoGraphToolResult` with correct status mapping
-- [ ] `handle_query` accepts `speak_top_n` parameter and passes it to payload builders
-- [ ] Test CLI updated to print JSON output with `--speak-top-n` argument
-- [ ] All formatter tests updated to test payload builders
-- [ ] Handler tests updated to expect `OncoGraphToolResult`
-- [ ] All 10 query types tested end-to-end and return correct payloads
-- [ ] Error cases tested (low confidence, missing entities, empty results, Cypher errors)
+- [x] `voice_agent/contracts.py` created with all Pydantic models (Status, VoiceHint, 10 payload models, Payload union, OncoGraphToolResult)
+- [x] All 10 payload builder functions implemented in `voice_agent/templates/formatters.py`
+- [x] Old string formatters removed from `voice_agent/templates/formatters.py`
+- [x] `QueryTemplate.format_response` type signature updated in `voice_agent/templates/models.py`
+- [x] All templates updated in `voice_agent/templates/registry.py` to use new payload builders
+- [x] `handle_query` updated to return `OncoGraphToolResult` with correct status mapping
+- [x] `handle_query` accepts `speak_top_n` parameter and passes it to payload builders
+- [x] Test CLI updated to print JSON output with `--speak-top-n` argument
+- [x] All formatter tests updated to test payload builders
+- [x] Handler tests updated to expect `OncoGraphToolResult`
+- [x] All 10 query types tested end-to-end and return correct payloads (via template + builder tests and existing integration tests)
+- [x] Error cases tested (low confidence, missing entities, empty results, Cypher errors)
 
 
 ---

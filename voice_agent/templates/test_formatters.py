@@ -1,211 +1,129 @@
 from __future__ import annotations
 
+from voice_agent.contracts import (
+    DiseaseBiomarkersPayload,
+    DiseaseTherapiesPayload,
+    GeneOverviewPayload,
+    GeneTargetingTherapiesPayload,
+    GeneVariantsPayload,
+    ResistanceBiomarkersPayload,
+    SensitivityBiomarkersPayload,
+    TherapyOverviewPayload,
+    TherapyTargetsPayload,
+    VariantResponsePayload,
+)
 from voice_agent.templates.formatters import (
-    disease_biomarkers_formatter,
-    disease_therapies_formatter,
-    gene_overview_formatter,
-    gene_targeting_therapies_formatter,
-    gene_variants_formatter,
-    resistance_biomarkers_formatter,
-    sensitivity_biomarkers_formatter,
-    therapy_overview_formatter,
-    therapy_targets_formatter,
-    variant_response_formatter,
+    build_disease_biomarkers_payload,
+    build_disease_therapies_payload,
+    build_gene_overview_payload,
+    build_gene_targeting_therapies_payload,
+    build_gene_variants_payload,
+    build_resistance_biomarkers_payload,
+    build_sensitivity_biomarkers_payload,
+    build_therapy_overview_payload,
+    build_therapy_targets_payload,
+    build_variant_response_payload,
 )
 
 
-class TestResistanceBiomarkersFormatter:
-    """Test resistance_biomarkers_formatter."""
+class TestResistanceBiomarkersPayload:
+    """Tests for build_resistance_biomarkers_payload."""
 
-    def test_empty_results(self):
-        """Test with empty results."""
-        result = resistance_biomarkers_formatter([], {"therapy": "cetuximab"}, 3)
-        assert "didn't find" in result.lower()
-        assert "cetuximab" in result
+    def test_empty_results_returns_none(self) -> None:
+        payload = build_resistance_biomarkers_payload([], {"therapy": "cetuximab"}, 3)
+        assert payload is None
 
-    def test_single_result(self):
-        """Test with single result."""
-        results = [{"gene_symbol": "KRAS", "best_evidence_level": "A", "evidence_count": 5}]
-        result = resistance_biomarkers_formatter(results, {"therapy": "cetuximab"}, 3)
-        assert "KRAS" in result
-        assert "cetuximab" in result
-        assert "one" in result or "1" in result
-
-    def test_three_results(self):
-        """Test with three results."""
+    def test_builds_payload_with_genes(self) -> None:
         results = [
             {"gene_symbol": "KRAS", "best_evidence_level": "A", "evidence_count": 5},
             {"gene_symbol": "BRAF", "best_evidence_level": "B", "evidence_count": 3},
-            {"gene_symbol": "EGFR", "best_evidence_level": "A", "evidence_count": 2},
         ]
-        result = resistance_biomarkers_formatter(results, {"therapy": "cetuximab"}, 3)
-        assert "KRAS" in result
-        assert "BRAF" in result
-        assert "EGFR" in result
-        assert "three" in result or "3" in result
+        payload = build_resistance_biomarkers_payload(results, {"therapy": "cetuximab"}, 3)
+        assert isinstance(payload, ResistanceBiomarkersPayload)
+        assert payload.intent == "resistance_biomarkers_query"
+        assert payload.therapy == "cetuximab"
+        assert payload.total_genes == 2
+        assert len(payload.top_genes) == 2
 
-    def test_five_results(self):
-        """Test with five results (should list top 3)."""
-        results = [
-            {"gene_symbol": "KRAS", "best_evidence_level": "A", "evidence_count": 5},
-            {"gene_symbol": "BRAF", "best_evidence_level": "B", "evidence_count": 3},
-            {"gene_symbol": "EGFR", "best_evidence_level": "A", "evidence_count": 2},
-            {"gene_symbol": "PIK3CA", "best_evidence_level": "B", "evidence_count": 1},
-            {"gene_symbol": "TP53", "best_evidence_level": "C", "evidence_count": 1},
-        ]
-        result = resistance_biomarkers_formatter(results, {"therapy": "cetuximab"}, 3)
-        assert "KRAS" in result
-        assert "BRAF" in result
-        assert "EGFR" in result
-        assert "five" in result or "5" in result
-        assert "others" in result or "two" in result
-
-    def test_with_evidence_level(self):
-        """Test with evidence level."""
-        results = [{"gene_symbol": "KRAS", "best_evidence_level": "A", "evidence_count": 5}]
-        result = resistance_biomarkers_formatter(results, {"therapy": "cetuximab"}, 3)
-        assert "level" in result.lower() or "evidence" in result.lower()
+    def test_respects_speak_top_n_cap(self) -> None:
+        results = [{"gene_symbol": f"GENE{i}", "best_evidence_level": "A", "evidence_count": i} for i in range(1, 10)]
+        payload = build_resistance_biomarkers_payload(results, {"therapy": "cetuximab"}, speak_top_n=2)
+        assert payload is not None
+        assert payload.total_genes == len(results)
+        assert len(payload.top_genes) == 2
 
 
-class TestSensitivityBiomarkersFormatter:
-    """Test sensitivity_biomarkers_formatter."""
+class TestSensitivityBiomarkersPayload:
+    """Tests for build_sensitivity_biomarkers_payload."""
 
-    def test_empty_results(self):
-        """Test with empty results."""
-        result = sensitivity_biomarkers_formatter([], {"therapy": "imatinib"}, 3)
-        assert "didn't find" in result.lower()
-        assert "imatinib" in result
+    def test_empty_results_returns_none(self) -> None:
+        payload = build_sensitivity_biomarkers_payload([], {"therapy": "imatinib"}, 3)
+        assert payload is None
 
-    def test_single_result(self):
-        """Test with single result."""
+    def test_builds_payload(self) -> None:
         results = [{"gene_symbol": "BCR", "best_evidence_level": "A", "evidence_count": 10}]
-        result = sensitivity_biomarkers_formatter(results, {"therapy": "imatinib"}, 3)
-        assert "BCR" in result
-        assert "imatinib" in result
+        payload = build_sensitivity_biomarkers_payload(results, {"therapy": "imatinib"}, 3)
+        assert isinstance(payload, SensitivityBiomarkersPayload)
+        assert payload.therapy == "imatinib"
+        assert payload.total_genes == 1
+        assert payload.top_genes[0]["gene"] == "BCR"
 
 
-class TestTherapyTargetsFormatter:
-    """Test therapy_targets_formatter."""
+class TestTherapyTargetsPayload:
+    """Tests for build_therapy_targets_payload."""
 
-    def test_empty_results(self):
-        """Test with empty results."""
-        result = therapy_targets_formatter([], {"therapy": "vemurafenib"}, 3)
-        assert "didn't find" in result.lower()
+    def test_empty_results_returns_none(self) -> None:
+        payload = build_therapy_targets_payload([], {"therapy": "vemurafenib"}, 3)
+        assert payload is None
 
-    def test_single_result(self):
-        """Test with single result."""
+    def test_builds_payload(self) -> None:
         results = [{"gene_symbol": "BRAF", "targets_moa": "inhibitor"}]
-        result = therapy_targets_formatter(results, {"therapy": "vemurafenib"}, 3)
-        assert "BRAF" in result
-        assert "vemurafenib" in result
-        assert "targets" in result
-
-    def test_multiple_results(self):
-        """Test with multiple results."""
-        results = [
-            {"gene_symbol": "BRAF", "targets_moa": "inhibitor"},
-            {"gene_symbol": "MEK", "targets_moa": "inhibitor"},
-        ]
-        result = therapy_targets_formatter(results, {"therapy": "vemurafenib"}, 3)
-        assert "BRAF" in result
-        assert "two" in result or "2" in result
+        payload = build_therapy_targets_payload(results, {"therapy": "vemurafenib"}, 3)
+        assert isinstance(payload, TherapyTargetsPayload)
+        assert payload.total_targets == 1
+        assert payload.targets[0]["gene"] == "BRAF"
 
 
-class TestGeneTargetingTherapiesFormatter:
-    """Test gene_targeting_therapies_formatter."""
+class TestGeneTargetingTherapiesPayload:
+    """Tests for build_gene_targeting_therapies_payload."""
 
-    def test_empty_results(self):
-        """Test with empty results."""
-        result = gene_targeting_therapies_formatter([], {"gene": "BRAF"}, 3)
-        assert "didn't find" in result.lower()
+    def test_empty_results_returns_none(self) -> None:
+        payload = build_gene_targeting_therapies_payload([], {"gene": "BRAF"}, 3)
+        assert payload is None
 
-    def test_single_result(self):
-        """Test with single result."""
+    def test_builds_payload(self) -> None:
         results = [{"therapy_name": "vemurafenib", "targets_moa": "inhibitor"}]
-        result = gene_targeting_therapies_formatter(results, {"gene": "BRAF"}, 3)
-        assert "vemurafenib" in result
-        assert "BRAF" in result
-
-    def test_multiple_results_same_moa(self):
-        """Test with multiple results, same MOA."""
-        results = [
-            {"therapy_name": "vemurafenib", "targets_moa": "inhibitor"},
-            {"therapy_name": "dabrafenib", "targets_moa": "inhibitor"},
-        ]
-        result = gene_targeting_therapies_formatter(results, {"gene": "BRAF"}, 3)
-        assert "vemurafenib" in result
-        assert "dabrafenib" in result
-        assert "inhibitor" in result
+        payload = build_gene_targeting_therapies_payload(results, {"gene": "BRAF"}, 3)
+        assert isinstance(payload, GeneTargetingTherapiesPayload)
+        assert payload.gene == "BRAF"
+        assert payload.total_therapies == 1
+        assert payload.therapies[0]["therapy"] == "vemurafenib"
 
 
-class TestGeneVariantsFormatter:
-    """Test gene_variants_formatter."""
+class TestGeneVariantsPayload:
+    """Tests for build_gene_variants_payload."""
 
-    def test_empty_results(self):
-        """Test with empty results."""
-        result = gene_variants_formatter([], {"gene": "KRAS"}, 3)
-        assert "no variants" in result.lower() or "has no" in result.lower()
+    def test_empty_results_returns_none(self) -> None:
+        payload = build_gene_variants_payload([], {"gene": "KRAS"}, 3)
+        assert payload is None
 
-    def test_single_result(self):
-        """Test with single result."""
-        results = [{"variant_name": "G12C"}]
-        result = gene_variants_formatter(results, {"gene": "KRAS"}, 3)
-        assert "G12C" in result
-        assert "KRAS" in result
-
-    def test_multiple_results(self):
-        """Test with multiple results."""
-        results = [
-            {"variant_name": "G12C"},
-            {"variant_name": "G12D"},
-            {"variant_name": "G13D"},
-        ]
-        result = gene_variants_formatter(results, {"gene": "KRAS"}, 3)
-        assert "G12C" in result
-        assert "G12D" in result
-        assert "G13D" in result
+    def test_builds_payload(self) -> None:
+        results = [{"variant_name": "G12C", "best_evidence_level": "A", "evidence_count": 4}]
+        payload = build_gene_variants_payload(results, {"gene": "KRAS"}, 3)
+        assert isinstance(payload, GeneVariantsPayload)
+        assert payload.gene == "KRAS"
+        assert payload.total_variants == 1
+        assert payload.top_variants[0]["variant"] == "G12C"
 
 
-class TestVariantResponseFormatter:
-    """Test variant_response_formatter."""
+class TestVariantResponsePayload:
+    """Tests for build_variant_response_payload."""
 
-    def test_empty_results(self):
-        """Test with empty results."""
-        result = variant_response_formatter([], {"variant": "V600E", "therapy": "dabrafenib"}, 3)
-        assert "don't have evidence" in result.lower() or "no evidence" in result.lower()
+    def test_empty_results_returns_none(self) -> None:
+        payload = build_variant_response_payload([], {"variant": "V600E", "therapy": "dabrafenib"}, 3)
+        assert payload is None
 
-    def test_single_sensitivity_result(self):
-        """Test with single sensitivity result."""
-        results = [
-            {
-                "effect": "sensitivity",
-                "disease_name": "Melanoma",
-                "best_evidence_level": "A",
-                "evidence_count": 10,
-            }
-        ]
-        result = variant_response_formatter(results, {"variant": "V600E", "therapy": "dabrafenib"}, 3)
-        assert "sensitivity" in result.lower()
-        assert "V600E" in result
-        assert "dabrafenib" in result
-
-    def test_single_resistance_result(self):
-        """Test with single resistance result."""
-        results = [
-            {
-                "effect": "resistance",
-                "disease_name": "Colorectal Cancer",
-                "best_evidence_level": "B",
-                "evidence_count": 5,
-            }
-        ]
-        result = variant_response_formatter(results, {"variant": "G12C", "therapy": "cetuximab"}, 3)
-        assert "resistance" in result.lower()
-        assert "G12C" in result
-        assert "cetuximab" in result
-
-    def test_both_effects(self):
-        """Test with both sensitivity and resistance."""
+    def test_builds_payload_with_effects(self) -> None:
         results = [
             {
                 "effect": "sensitivity",
@@ -220,151 +138,90 @@ class TestVariantResponseFormatter:
                 "evidence_count": 5,
             },
         ]
-        result = variant_response_formatter(results, {"variant": "V600E", "therapy": "dabrafenib"}, 3)
-        assert "sensitivity" in result.lower()
-        assert "resistance" in result.lower()
+        payload = build_variant_response_payload(results, {"variant": "V600E", "therapy": "dabrafenib"}, 3)
+        assert isinstance(payload, VariantResponsePayload)
+        assert payload.variant == "V600E"
+        assert payload.therapy == "dabrafenib"
+        effects = {item["effect"] for item in payload.results}
+        assert "sensitivity" in effects
+        assert "resistance" in effects
 
 
-class TestGeneOverviewFormatter:
-    """Test gene_overview_formatter."""
+class TestGeneOverviewPayload:
+    """Tests for build_gene_overview_payload."""
 
-    def test_empty_results(self):
-        """Test with empty results."""
-        result = gene_overview_formatter([], {"gene": "KRAS"}, 3)
-        assert "not in my database" in result.lower()
+    def test_empty_results_returns_none(self) -> None:
+        payload = build_gene_overview_payload([], {"gene": "KRAS"}, 3)
+        assert payload is None
 
-    def test_with_variants_and_therapies(self):
-        """Test with variants and therapies."""
+    def test_builds_payload(self) -> None:
         results = [{"gene_symbol": "KRAS", "variant_count": 10, "therapy_count": 5}]
-        result = gene_overview_formatter(results, {"gene": "KRAS"}, 3)
-        assert "KRAS" in result
-        assert "ten" in result or "10" in result
-        assert "five" in result or "5" in result
-
-    def test_with_only_variants(self):
-        """Test with only variants."""
-        results = [{"gene_symbol": "KRAS", "variant_count": 10, "therapy_count": 0}]
-        result = gene_overview_formatter(results, {"gene": "KRAS"}, 3)
-        assert "variants" in result
-        assert "therap" not in result.lower()
+        payload = build_gene_overview_payload(results, {"gene": "KRAS"}, 3)
+        assert isinstance(payload, GeneOverviewPayload)
+        assert payload.gene == "KRAS"
+        assert payload.variant_count == 10
+        assert payload.therapy_count == 5
 
 
-class TestTherapyOverviewFormatter:
-    """Test therapy_overview_formatter."""
+class TestTherapyOverviewPayload:
+    """Tests for build_therapy_overview_payload."""
 
-    def test_empty_results(self):
-        """Test with empty results."""
-        result = therapy_overview_formatter([], {"therapy": "cetuximab"}, 3)
-        assert "not in my database" in result.lower()
+    def test_empty_results_returns_none(self) -> None:
+        payload = build_therapy_overview_payload([], {"therapy": "cetuximab"}, 3)
+        assert payload is None
 
-    def test_with_all_info(self):
-        """Test with targets and biomarkers."""
+    def test_builds_payload(self) -> None:
         results = [
             {
                 "therapy_name": "cetuximab",
-                "target_count": 1,
+                "target_count": 2,
                 "biomarker_count": 20,
-            }
+                "gene_symbol": "EGFR",
+                "targets_moa": "inhibitor",
+            },
+            {
+                "therapy_name": "cetuximab",
+                "target_count": 2,
+                "biomarker_count": 20,
+                "gene_symbol": "KRAS",
+                "targets_moa": "inhibitor",
+            },
         ]
-        result = therapy_overview_formatter(results, {"therapy": "cetuximab"}, 3)
-        assert "cetuximab" in result
-        assert "one" in result or "1" in result
-        assert "twenty" in result or "20" in result
+        payload = build_therapy_overview_payload(results, {"therapy": "cetuximab"}, 3)
+        assert isinstance(payload, TherapyOverviewPayload)
+        assert payload.therapy == "cetuximab"
+        assert payload.target_count == 2
+        assert payload.biomarker_count == 20
+        assert len(payload.targets) <= 3
 
 
-class TestDiseaseBiomarkersFormatter:
-    """Test disease_biomarkers_formatter."""
+class TestDiseaseBiomarkersPayload:
+    """Tests for build_disease_biomarkers_payload."""
 
-    def test_empty_results(self):
-        """Test with empty results."""
-        result = disease_biomarkers_formatter([], {"disease": "lung cancer"}, 3)
-        assert "didn't find" in result.lower()
+    def test_empty_results_returns_none(self) -> None:
+        payload = build_disease_biomarkers_payload([], {"disease": "lung cancer"}, 3)
+        assert payload is None
 
-    def test_single_result(self):
-        """Test with single result."""
+    def test_builds_payload(self) -> None:
         results = [{"gene_symbol": "EGFR", "best_evidence_level": "A", "evidence_count": 10}]
-        result = disease_biomarkers_formatter(results, {"disease": "lung cancer"}, 3)
-        assert "EGFR" in result
-        assert "lung cancer" in result or "lung" in result
-
-    def test_multiple_results(self):
-        """Test with multiple results."""
-        results = [
-            {"gene_symbol": "EGFR", "best_evidence_level": "A", "evidence_count": 10},
-            {"gene_symbol": "KRAS", "best_evidence_level": "B", "evidence_count": 5},
-            {"gene_symbol": "BRAF", "best_evidence_level": "A", "evidence_count": 3},
-        ]
-        result = disease_biomarkers_formatter(results, {"disease": "lung cancer"}, 3)
-        assert "EGFR" in result
-        assert "KRAS" in result
-        assert "BRAF" in result
+        payload = build_disease_biomarkers_payload(results, {"disease": "lung cancer"}, 3)
+        assert isinstance(payload, DiseaseBiomarkersPayload)
+        assert payload.disease == "lung cancer"
+        assert payload.total_genes == 1
+        assert payload.top_genes[0]["gene"] == "EGFR"
 
 
-class TestDiseaseTherapiesFormatter:
-    """Test disease_therapies_formatter."""
+class TestDiseaseTherapiesPayload:
+    """Tests for build_disease_therapies_payload."""
 
-    def test_empty_results(self):
-        """Test with empty results."""
-        result = disease_therapies_formatter([], {"disease": "colorectal cancer"}, 3)
-        assert "didn't find" in result.lower()
+    def test_empty_results_returns_none(self) -> None:
+        payload = build_disease_therapies_payload([], {"disease": "colorectal cancer"}, 3)
+        assert payload is None
 
-    def test_single_result(self):
-        """Test with single result."""
+    def test_builds_payload(self) -> None:
         results = [{"therapy_name": "cetuximab", "evidence_count": 10}]
-        result = disease_therapies_formatter(results, {"disease": "colorectal cancer"}, 3)
-        assert "cetuximab" in result
-        assert "colorectal" in result.lower() or "cancer" in result.lower()
-
-    def test_multiple_results(self):
-        """Test with multiple results."""
-        results = [
-            {"therapy_name": "cetuximab", "evidence_count": 10},
-            {"therapy_name": "panitumumab", "evidence_count": 8},
-            {"therapy_name": "bevacizumab", "evidence_count": 5},
-        ]
-        result = disease_therapies_formatter(results, {"disease": "colorectal cancer"}, 3)
-        assert "cetuximab" in result
-        assert "panitumumab" in result
-        assert "bevacizumab" in result
-
-
-class TestFormatterEdgeCases:
-    """Test edge cases for all formatters."""
-
-    def test_none_entities(self):
-        """Test formatters handle None entities gracefully."""
-        results = [{"gene_symbol": "KRAS"}]
-        result = resistance_biomarkers_formatter(results, {"therapy": None}, 3)
-        # Should use fallback text
-        assert "therapy" in result.lower() or "this" in result.lower()
-
-    def test_missing_fields_in_results(self):
-        """Test formatters handle missing fields."""
-        results = [{}]  # Empty dict
-        result = resistance_biomarkers_formatter(results, {"therapy": "cetuximab"}, 3)
-        # Should handle gracefully
-        assert isinstance(result, str)
-        assert len(result) > 0
-
-    def test_none_values_in_results(self):
-        """Test formatters handle None values in results."""
-        results = [{"gene_symbol": None, "best_evidence_level": None}]
-        result = resistance_biomarkers_formatter(results, {"therapy": "cetuximab"}, 3)
-        # Should handle None gracefully
-        assert isinstance(result, str)
-
-    def test_custom_max_items(self):
-        """Test formatters respect max_items_to_list parameter."""
-        results = [
-            {"gene_symbol": "KRAS"},
-            {"gene_symbol": "BRAF"},
-            {"gene_symbol": "EGFR"},
-            {"gene_symbol": "PIK3CA"},
-            {"gene_symbol": "TP53"},
-        ]
-        result = resistance_biomarkers_formatter(results, {"therapy": "cetuximab"}, max_items_to_list=2)
-        # Should only list 2 items
-        assert "KRAS" in result
-        assert "BRAF" in result
-        # Should mention others
-        assert "others" in result or "three" in result
+        payload = build_disease_therapies_payload(results, {"disease": "colorectal cancer"}, 3)
+        assert isinstance(payload, DiseaseTherapiesPayload)
+        assert payload.disease == "colorectal cancer"
+        assert payload.total_therapies == 1
+        assert payload.therapies[0]["therapy"] == "cetuximab"
