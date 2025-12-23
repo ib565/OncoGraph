@@ -119,8 +119,8 @@ async def oncograph_query(
     """
     logger.info("oncograph_query called", extra={"query": query})
 
-    # Provide verbal feedback if the query takes longer than 0.2 seconds
-    async def _speak_acknowledgment(delay: float = 0.2) -> None:
+    # Provide verbal feedback if the query takes longer than 0.1 seconds
+    async def _speak_acknowledgment(delay: float = 0.1) -> None:
         """Speak a brief acknowledgment if the query is taking a moment."""
         await asyncio.sleep(delay)
         # Only speak if we haven't completed yet (task will be cancelled if done)
@@ -136,7 +136,7 @@ async def oncograph_query(
             pass
 
     # Start acknowledgment task
-    acknowledgment_task = asyncio.create_task(_speak_acknowledgment(0.2))
+    acknowledgment_task = asyncio.create_task(_speak_acknowledgment(0.1))
 
     try:
         result = await handle_query(query, speak_top_n=3)
