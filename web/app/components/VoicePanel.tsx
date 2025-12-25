@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Room, RoomEvent, Track, RemoteParticipant, Participant, ConnectionState, createLocalAudioTrack, ParticipantKind } from "livekit-client";
 import type { LocalAudioTrack, RemoteAudioTrack } from "livekit-client";
 import { useAppContext } from "../contexts/AppContext";
@@ -380,10 +380,13 @@ export default function VoicePanel() {
     };
   }, []);
 
-  // Get MiniGraph rows from tool result
-  const graphRows = voiceState.toolResult?.status === "ok" && voiceState.toolResult.payload
-    ? payloadToMiniGraphRows(voiceState.toolResult.payload)
-    : [];
+  // Get MiniGraph rows from tool result - memoized to prevent unnecessary recalculations
+  // Only recalculates when toolResult actually changes, not when other voiceState fields change
+  const graphRows = useMemo(() => {
+    return voiceState.toolResult?.status === "ok" && voiceState.toolResult.payload
+      ? payloadToMiniGraphRows(voiceState.toolResult.payload)
+      : [];
+  }, [voiceState.toolResult]);
 
   const hasGraphData = graphRows.length > 0;
   const showPlaceholder = voiceState.toolResult?.status === "ok" && 
