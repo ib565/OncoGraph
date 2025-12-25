@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import type { Track } from "livekit-client";
+import { createAudioAnalyser, type LocalAudioTrack, type RemoteAudioTrack } from "livekit-client";
 
 interface AudioVisualizerProps {
-  audioTrack: Track | null;
+  audioTrack: LocalAudioTrack | RemoteAudioTrack | null;
   barCount?: number;
   className?: string;
 }
@@ -12,73 +12,68 @@ interface AudioVisualizerProps {
 export default function AudioVisualizer({ audioTrack, barCount = 7, className = "" }: AudioVisualizerProps) {
   const [audioLevels, setAudioLevels] = useState<number[]>(new Array(barCount).fill(0));
   const animationFrameRef = useRef<number | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const dataArrayRef = useRef<Uint8Array | null>(null);
+  const cleanupRef = useRef<(() => Promise<void>) | null>(null);
 
   useEffect(() => {
-    if (!audioTrack) {
-      // Reset levels when no track
+    if (!audioTrack || !(audioTrack as any).mediaStream) {
+      // Reset levels when no track or track not ready
       setAudioLevels(new Array(barCount).fill(0));
       return;
     }
 
-    // Create audio context and analyser
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const analyser = audioContext.createAnalyser();
-    analyser.fftSize = 256;
-    analyser.smoothingTimeConstant = 0.8;
+    // Use LiveKit's createAudioAnalyser utility (same as official components)
+    // Use larger fftSize for better frequency resolution
+    const { analyser, cleanup } = createAudioAnalyser(audioTrack, {
+      fftSize: 2048,
+      smoothingTimeConstant: 0.8,
+    });
+
+    cleanupRef.current = cleanup;
 
     const dataArray = new Uint8Array(analyser.frequencyBinCount);
-    dataArrayRef.current = dataArray;
-
-    audioContextRef.current = audioContext;
-    analyserRef.current = analyser;
-
-    // Get the audio stream from the track
-    const stream = audioTrack.mediaStream;
-    if (stream) {
-      const source = audioContext.createMediaStreamSource(stream);
-      source.connect(analyser);
-    } else {
-      // If stream is not available yet, wait for it
-      const checkStream = setInterval(() => {
-        const currentStream = audioTrack.mediaStream;
-        if (currentStream) {
-          const source = audioContext.createMediaStreamSource(currentStream);
-          source.connect(analyser);
-          clearInterval(checkStream);
-        }
-      }, 100);
-
-      // Cleanup check interval after 5 seconds if still no stream
-      setTimeout(() => {
-        clearInterval(checkStream);
-      }, 5000);
-    }
 
     // Animation loop
     const updateLevels = () => {
-      if (!analyserRef.current || !dataArrayRef.current) return;
+      analyser.getByteFrequencyData(dataArray);
 
-      analyserRef.current.getByteFrequencyData(dataArrayRef.current);
+      // Focus on frequency range where voice audio has energy
+      // Skip very low frequencies (noise) and very high frequencies (not much voice energy)
+      const loPass = 10; // Start from bin 10 to skip DC and very low frequencies
+      const hiPass = Math.min(dataArray.length, 300); // Focus on frequencies up to ~6kHz (voice range)
+      const relevantData = dataArray.slice(loPass, hiPass);
+      
+      if (relevantData.length === 0) {
+        setAudioLevels(new Array(barCount).fill(0));
+        animationFrameRef.current = requestAnimationFrame(updateLevels);
+        return;
+      }
 
-      // Get average levels for each bar (divide frequency data into barCount groups)
-      const samplesPerBar = Math.floor(dataArrayRef.current.length / barCount);
+      // Divide into equal bands but apply amplification to higher frequency bands
+      // This makes all bars visible even though voice has less energy in higher frequencies
+      const samplesPerBar = Math.floor(relevantData.length / barCount);
       const newLevels: number[] = [];
 
       for (let i = 0; i < barCount; i++) {
-        let sum = 0;
         const start = i * samplesPerBar;
-        const end = Math.min(start + samplesPerBar, dataArrayRef.current.length);
-
+        const end = Math.min(start + samplesPerBar, relevantData.length);
+        const bandLength = Math.max(1, end - start);
+        
+        let sum = 0;
         for (let j = start; j < end; j++) {
-          sum += dataArrayRef.current[j];
+          sum += relevantData[j];
         }
-
-        const avg = sum / (end - start);
+        
+        const avg = sum / bandLength;
         // Normalize to 0-1 range (0-255 -> 0-1)
-        newLevels.push(avg / 255);
+        let normalized = avg / 255;
+        
+        // Apply progressive amplification to higher frequency bands
+        // This makes bars 4-7 more visible even with less energy
+        // Reduced amplification to prevent all bars from maxing out
+        const amplification = 1 + (i / barCount) * 0.5; // Amplify up to 1.5x for highest band
+        normalized = Math.min(1, normalized * amplification);
+        
+        newLevels.push(normalized);
       }
 
       setAudioLevels(newLevels);
@@ -90,9 +85,11 @@ export default function AudioVisualizer({ audioTrack, barCount = 7, className = 
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
       }
-      if (audioContextRef.current && audioContextRef.current.state !== "closed") {
-        audioContextRef.current.close();
+      if (cleanupRef.current) {
+        cleanupRef.current();
+        cleanupRef.current = null;
       }
     };
   }, [audioTrack, barCount]);
