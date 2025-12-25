@@ -8,6 +8,8 @@
     "start": "next start"
   },
   "dependencies": {
+    "@livekit/components-react": "^2.9.17",
+    "@livekit/components-styles": "^1.2.0",
     "cytoscape": "^3.33.1",
     "cytoscape-cose-bilkent": "^4.1.0",
     "livekit-client": "^2.16.1",
