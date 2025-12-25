@@ -21,6 +21,14 @@ export default function VoicePanel() {
   const [agentState, setAgentState] = useState<"initializing" | "listening" | "thinking" | "speaking">("initializing");
   const stateCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  const getParticipantAttribute = (participant: Participant, key: string): string | undefined => {
+    const attrs: any = (participant as any).attributes;
+    if (!attrs) return undefined;
+    // livekit-client versions differ: attributes may be a plain object or a Map-like.
+    if (typeof attrs.get === "function") return attrs.get(key);
+    return attrs[key];
+  };
+
   // Generate unique room name
   const generateRoomName = () => {
     const timestamp = Date.now();
@@ -98,9 +106,9 @@ export default function VoicePanel() {
         console.log("Participant connected", participant.identity, "kind", participant.kind);
         
         // Check if this is the agent participant
-        if (participant.kind === ParticipantKind.Agent) {
+        if (participant.kind === ParticipantKind.AGENT) {
           // Get agent state from attributes
-          const stateAttr = participant.attributes?.get("lk.agent.state");
+          const stateAttr = getParticipantAttribute(participant, "lk.agent.state");
           if (stateAttr) {
             setAgentState(stateAttr as "initializing" | "listening" | "thinking" | "speaking");
           }
@@ -112,7 +120,7 @@ export default function VoicePanel() {
             clearInterval(stateCheckIntervalRef.current);
           }
           stateCheckIntervalRef.current = setInterval(() => {
-            const newState = participant.attributes?.get("lk.agent.state");
+            const newState = getParticipantAttribute(participant, "lk.agent.state");
             if (newState) {
               setAgentState((prev) => {
                 if (prev !== newState) {
@@ -124,7 +132,7 @@ export default function VoicePanel() {
           }, 500);
 
           // Get agent audio track
-          participant.audioTracks.forEach((publication) => {
+          participant.audioTrackPublications.forEach((publication) => {
             if (publication.track) {
               attachAudioTrack(publication.track);
               setAgentAudioTrack(publication.track as RemoteAudioTrack);
@@ -143,7 +151,7 @@ export default function VoicePanel() {
 
       room.on(RoomEvent.TrackSubscribed, (track: Track, _publication: any, participant: Participant) => {
         console.log("Track subscribed from participant", participant.identity, "kind", track.kind);
-        if (track.kind === "audio" && participant.kind === ParticipantKind.Agent) {
+        if (track.kind === "audio" && participant.kind === ParticipantKind.AGENT) {
           attachAudioTrack(track);
           setAgentAudioTrack(track as RemoteAudioTrack);
         }
@@ -190,23 +198,23 @@ export default function VoicePanel() {
       // Connect to room
       await room.connect(url, token);
 
-      // Check for existing agent participants
-      room.remoteParticipants.forEach((participant) => {
-        if (participant.kind === ParticipantKind.Agent) {
-          const stateAttr = participant.attributes?.get("lk.agent.state");
-          if (stateAttr) {
-            setAgentState(stateAttr as "initializing" | "listening" | "thinking" | "speaking");
-          }
-          
-          // Get existing audio tracks
-          participant.audioTracks.forEach((publication) => {
-            if (publication.track) {
-              attachAudioTrack(publication.track);
-              setAgentAudioTrack(publication.track as RemoteAudioTrack);
-            }
-          });
-        }
-      });
+      // Set up audio element for agent audio playback (must be created before attaching tracks)
+      if (!audioElementRef.current) {
+        const audioElement = document.createElement("audio");
+        audioElement.autoplay = true;
+        audioElement.playsInline = true;
+        audioElement.volume = 1.0;
+        audioElementRef.current = audioElement;
+        document.body.appendChild(audioElement);
+        
+        // Try to play immediately (required by browsers for autoplay)
+        audioElement.play().catch((err) => {
+          console.warn("Initial audio play failed (may need user interaction):", err);
+        });
+      } else {
+        // Ensure existing audio element is ready
+        audioElementRef.current.volume = 1.0;
+      }
 
       // Start audio playback (required by browsers for autoplayed audio)
       try {
@@ -214,6 +222,24 @@ export default function VoicePanel() {
       } catch (audioError) {
         console.warn("Failed to start room audio automatically:", audioError);
       }
+
+      // Check for existing agent participants (after audio element is ready)
+      room.remoteParticipants.forEach((participant) => {
+        if (participant.kind === ParticipantKind.AGENT) {
+          const stateAttr = getParticipantAttribute(participant, "lk.agent.state");
+          if (stateAttr) {
+            setAgentState(stateAttr as "initializing" | "listening" | "thinking" | "speaking");
+          }
+          
+          // Get existing audio tracks
+          participant.audioTrackPublications.forEach((publication) => {
+            if (publication.track) {
+              attachAudioTrack(publication.track);
+              setAgentAudioTrack(publication.track as RemoteAudioTrack);
+            }
+          });
+        }
+      });
 
       // Request microphone permission and publish audio
       try {
@@ -232,24 +258,6 @@ export default function VoicePanel() {
             error: `Microphone error: ${micError.message}`,
           });
         }
-      }
-
-      // Set up audio element for agent audio playback
-      if (!audioElementRef.current) {
-        const audioElement = document.createElement("audio");
-        audioElement.autoplay = true;
-        audioElement.playsInline = true;
-        audioElement.volume = 1.0;
-        audioElementRef.current = audioElement;
-        document.body.appendChild(audioElement);
-        
-        // Try to play immediately (required by browsers for autoplay)
-        audioElement.play().catch((err) => {
-          console.warn("Initial audio play failed (may need user interaction):", err);
-        });
-      } else {
-        // Ensure existing audio element is ready
-        audioElementRef.current.volume = 1.0;
       }
     } catch (error: any) {
       console.error("Connection error:", error);
