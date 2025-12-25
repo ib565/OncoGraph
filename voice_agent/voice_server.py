@@ -3,13 +3,17 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
+import os
 
 from dotenv import load_dotenv
 from livekit import agents
-from livekit.agents import Agent, AgentServer, AgentSession, RunContext, function_tool
+from livekit.agents import Agent, AgentServer, AgentSession, RunContext, function_tool, get_job_context
 
+from voice_agent.contracts import OncoGraphToolResult, ResistanceBiomarkersPayload, VoiceHint
 from voice_agent.handler import handle_query
+from voice_agent.router.models import ExtractedEntities
 
 # Load environment variables
 load_dotenv()
@@ -34,6 +38,37 @@ logging.getLogger("google_genai").setLevel(logging.WARNING)
 logging.getLogger("voice_agent").setLevel(logging.INFO)
 
 logger = logging.getLogger(__name__)
+
+# Test mode: set VOICE_AGENT_TEST_MODE=1 to return hardcoded test data
+TEST_MODE = os.getenv("VOICE_AGENT_TEST_MODE", "0") == "1"
+
+
+def _get_test_result() -> OncoGraphToolResult:
+    """Return a hardcoded test result for testing data packet transmission."""
+    return OncoGraphToolResult(
+        status="ok",
+        confidence=1.0,
+        entities=ExtractedEntities(
+            gene=None,
+            therapy="cetuximab",
+            disease=None,
+            variant=None,
+        ),
+        message=None,
+        voice=VoiceHint(speak_top_n=3),
+        payload=ResistanceBiomarkersPayload(
+            intent="resistance_biomarkers_query",
+            therapy="cetuximab",
+            disease=None,
+            total_genes=5,
+            top_genes=[
+                {"gene": "KRAS", "best_level": "A", "evidence_count": 88},
+                {"gene": "BRAF", "best_level": "B", "evidence_count": 45},
+                {"gene": "PIK3CA", "best_level": "C", "evidence_count": 23},
+            ],
+        ),
+    )
+
 
 # System instructions for the voice agent (structured per LiveKit prompting best practices)
 SYSTEM_INSTRUCTIONS = """# Identity
@@ -117,56 +152,75 @@ async def oncograph_query(
         - payload: intent-specific structured data (top results only, when status is ok)
         - message: short user-safe message for non-ok outcomes
     """
-    logger.info("oncograph_query called", extra={"query": query})
+    logger.info("oncograph_query called", extra={"query": query, "test_mode": TEST_MODE})
 
-    # Provide verbal feedback if the query takes longer than 0.1 seconds
-    async def _speak_acknowledgment(delay: float = 0.1) -> None:
-        """Speak a brief acknowledgment if the query is taking a moment."""
-        await asyncio.sleep(delay)
-        # Only speak if we haven't completed yet (task will be cancelled if done)
+    # TEST MODE: Return hardcoded result without hitting LLM/Neo4j
+    if TEST_MODE:
+        logger.info("TEST MODE: Returning hardcoded test result")
+        result = _get_test_result()
+    else:
+        # Provide verbal feedback if the query takes longer than 0.1 seconds
+        async def _speak_acknowledgment(delay: float = 0.1) -> None:
+            """Speak a brief acknowledgment if the query is taking a moment."""
+            await asyncio.sleep(delay)
+            # Only speak if we haven't completed yet (task will be cancelled if done)
+            try:
+                # Use say() for immediate predefined feedback instead of generate_reply()
+                await context.session.say(
+                    "Let me check that.",
+                    allow_interruptions=False,
+                    add_to_chat_ctx=False,  # Don't add to chat context to avoid confusion
+                )
+            except Exception:
+                # Task was cancelled or session ended, ignore
+                pass
+
+        # Start acknowledgment task
+        acknowledgment_task = asyncio.create_task(_speak_acknowledgment(0.1))
+
         try:
-            # Use say() for immediate predefined feedback instead of generate_reply()
-            await context.session.say(
-                "Let me check that.",
-                allow_interruptions=False,
-                add_to_chat_ctx=False,  # Don't add to chat context to avoid confusion
-            )
-        except Exception:
-            # Task was cancelled or session ended, ignore
-            pass
+            result = await handle_query(query, speak_top_n=3)
+            # Cancel acknowledgment if we completed quickly
+            acknowledgment_task.cancel()
+            try:
+                await acknowledgment_task
+            except asyncio.CancelledError:
+                pass
+        except Exception as exc:
+            # Cancel acknowledgment task
+            acknowledgment_task.cancel()
+            try:
+                await acknowledgment_task
+            except asyncio.CancelledError:
+                pass
+            raise exc
 
-    # Start acknowledgment task
-    acknowledgment_task = asyncio.create_task(_speak_acknowledgment(0.1))
-
+    # Send tool result to frontend via data packet (for both test mode and normal mode)
     try:
-        result = await handle_query(query, speak_top_n=3)
-        # Cancel acknowledgment if we completed quickly
-        acknowledgment_task.cancel()
-        try:
-            await acknowledgment_task
-        except asyncio.CancelledError:
-            pass
+        room = get_job_context().room
+        # Convert result to dict and serialize to JSON
+        result_dict = result.model_dump()
+        json_payload = json.dumps(result_dict)
 
-        # Convert Pydantic model to dict for LLM consumption
-        return result.model_dump()
-    except Exception as exc:
-        logger.error("oncograph_query failed", exc_info=exc, extra={"query": query})
-        # Cancel acknowledgment task
-        acknowledgment_task.cancel()
-        try:
-            await acknowledgment_task
-        except asyncio.CancelledError:
-            pass
+        # Send as reliable data packet to the room (broadcast to all participants)
+        await room.local_participant.publish_data(
+            json_payload,
+            reliable=True,
+            topic="oncograph.tool_result",
+        )
+        logger.info(
+            "Sent tool result to frontend",
+            extra={
+                "status": result.status,
+                "intent": result.payload.intent if result.payload else None,
+            },
+        )
+    except Exception as send_exc:
+        # Log but don't fail the tool if data packet send fails
+        logger.warning("Failed to send tool result to frontend", exc_info=send_exc, extra={"query": query})
 
-        # Return error status
-        return {
-            "status": "error",
-            "confidence": 0.0,
-            "entities": {},
-            "message": "I ran into a problem processing your query. Could you try asking differently?",
-            "voice": {"speak_top_n": 3},
-            "payload": None,
-        }
+    # Convert Pydantic model to dict for LLM consumption
+    return result.model_dump()
 
 
 class OncoGraphAgent(Agent):

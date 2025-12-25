@@ -120,8 +120,8 @@ export default function VoicePanel() {
           const text = new TextDecoder().decode(payload);
           const data = JSON.parse(text);
           
-          // Handle tool result
-          if (data.status && data.payload) {
+          // Handle tool result (all statuses, including no_results, needs_clarification, etc.)
+          if (data.status) {
             setVoiceState({
               toolResult: data,
             });
