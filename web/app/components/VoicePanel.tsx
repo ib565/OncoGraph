@@ -200,7 +200,7 @@ export default function VoicePanel() {
       if (!audioElementRef.current) {
         const audioElement = document.createElement("audio");
         audioElement.autoplay = true;
-        audioElement.playsInline = true;
+        audioElement.setAttribute("playsinline", "true");
         audioElement.volume = 1.0;
         audioElementRef.current = audioElement;
         document.body.appendChild(audioElement);
