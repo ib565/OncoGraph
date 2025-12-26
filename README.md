@@ -7,6 +7,7 @@
 **For developers:** 
 - [Technical Details](docs/TECHNICAL_DETAILS.md) — Architecture, security, testing, etc
 - [Fine-Tuning (Text-to-Cypher)](docs/FINETUNING_DETAILS.md) — Overview, technical details, etc. *Note: Fine tuned models are not deployed, looking for cheap inference options.*
+- [Voice Agent](voice_agent/README.md) — Voice-enabled query interface with sub-2s response times
 
 ---
 
@@ -183,6 +184,24 @@ OncoGraph includes **fine-tuned LLMs** that translate natural language oncology 
 **Documentation:** [Overview](docs/FINETUNING_OVERVIEW.md) | [Technical Details](docs/FINETUNING_DETAILS.md)
 
 Models available on Hugging Face as 16-bit merged models (vLLM-compatible) and LoRA adapters. *Note: Fine-tuned models not yet deployed; looking for cost-effective inference options.*
+
+---
+
+## Voice Agent
+
+OncoGraph includes a **voice-enabled query interface** that lets you ask questions about the knowledge graph using natural speech. The voice agent uses a fast-path architecture with pre-written Cypher templates to achieve **sub-2-second response times** for common query patterns.
+
+**Key features:**
+- **10 query types** with template-based execution (resistance biomarkers, therapy targets, gene variants, etc.)
+- **Entity normalization** handles common variations (KRAS/kras, Erbitux/cetuximab) automatically
+- **Conversational interface** via Gemini Flash with Deepgram STT and Cartesia TTS
+- **Structured results** optimized for voice output (top 3–5 items, 1–3 sentences)
+
+**Status:** Voice agent is implemented and tested locally but **not yet deployed** due to inference budget constraints. The standard web interface remains fully functional.
+
+**Documentation:** [Voice Agent README](voice_agent/README.md) — Architecture, setup, and technical details
+
+**Demo:** Interested in seeing the voice agent in action? [Reach out for a demo](mailto:ish.bhartiya@gmail.com).
 
 ---
 
