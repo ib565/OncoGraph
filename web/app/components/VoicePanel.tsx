@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Room, RoomEvent, Track, RemoteParticipant, Participant, ConnectionState, createLocalAudioTrack, ParticipantKind } from "livekit-client";
 import type { LocalAudioTrack, RemoteAudioTrack } from "livekit-client";
+import { DataPacket_Kind } from "@livekit/protocol";
 import { useAppContext } from "../contexts/AppContext";
 import MiniGraph from "./MiniGraph";
 import { payloadToMiniGraphRows } from "../utils/voicePayloadToRows";
@@ -158,7 +159,7 @@ export default function VoicePanel() {
       });
 
       // Listen for data channel messages (tool results, transcripts)
-      room.on(RoomEvent.DataReceived, (payload: Uint8Array, participant: Participant | undefined, kind: string | undefined, topic: string | undefined) => {
+      room.on(RoomEvent.DataReceived, (payload: Uint8Array, participant: RemoteParticipant | undefined, kind: DataPacket_Kind | undefined, topic: string | undefined) => {
         try {
           const text = new TextDecoder().decode(payload);
           const data = JSON.parse(text);
