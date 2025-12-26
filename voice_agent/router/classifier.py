@@ -105,9 +105,6 @@ class GeminiRouter(_GeminiBase):
             except Exception as exc:  # pragma: no cover - defensive
                 logger.warning("Normalizer raised, returning unnormalized entities", exc_info=exc)
 
-        if debug:
-            result = result.model_copy(update={"raw_model_output": {"text": raw}})
-
         if self._cache and cache_key:
             self._cache.set(cache_key, result)
 

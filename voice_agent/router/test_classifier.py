@@ -168,7 +168,6 @@ async def test_real_llm_resistance_biomarkers():
     assert result.intent == "resistance_biomarkers_query"
     assert result.entities.therapy == "cetuximab"
     assert 0.0 <= result.confidence <= 1.0
-    assert result.raw_model_output is not None
 
 
 @pytest.mark.llm_integration()
