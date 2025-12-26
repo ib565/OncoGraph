@@ -2,6 +2,8 @@
 
 Voice interface for querying the OncoGraph oncology knowledge graph. Ask questions about biomarkers, therapies, genes, variants, and diseases. Template-matched queries respond in under 2 seconds.
 
+> **Note:** The voice agent is implemented and tested locally but **not yet deployed** due to inference budget constraints. It will not work out of the box. Interested in seeing a demo? [Get in touch](mailto:ish.bhartiya@gmail.com).
+
 ## Quick Start
 
 ### Prerequisites

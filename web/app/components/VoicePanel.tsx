@@ -453,6 +453,29 @@ export default function VoicePanel() {
         <h3 className="panel-title">Voice Agent</h3>
       </div>
       <div className="panel-content">
+        {/* Deployment Notice */}
+        <div className="layout-row">
+          <div className="layout-column full-width">
+            <div
+              style={{
+                padding: "16px 20px",
+                backgroundColor: "rgba(251, 191, 36, 0.1)",
+                border: "1px solid rgba(251, 191, 36, 0.3)",
+                borderRadius: "var(--radius)",
+                color: "#fbbf24",
+                fontSize: "14px",
+                textAlign: "center",
+                marginBottom: "24px",
+              }}
+            >
+              <strong>Note:</strong> The voice agent is implemented and tested locally but <strong>not yet deployed</strong> due to inference budget constraints. It will not work out of the box. Interested in seeing a demo?{" "}
+              <a href="mailto:ish.bhartiya@gmail.com" style={{ color: "#fbbf24", textDecoration: "underline" }}>
+                Get in touch
+              </a>
+              .
+            </div>
+          </div>
+        </div>
         {/* Row 1: Centered Hero Voice Controls */}
         <div className="layout-row">
           <div className="layout-column full-width">
