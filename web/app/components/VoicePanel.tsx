@@ -166,10 +166,6 @@ export default function VoicePanel() {
           
           // Handle tool result (all statuses, including no_results, needs_clarification, etc.)
           if (data.status) {
-            setVoiceState({
-              toolResult: data,
-            });
-            
             // Add to history
             const historyEntry = {
               timestamp: Date.now(),
@@ -177,9 +173,10 @@ export default function VoicePanel() {
               agentResponse: voiceState.agentResponse || "",
               toolResult: data,
             };
-            setVoiceState((prev) => ({
-              connectionHistory: [...(prev.connectionHistory || []), historyEntry],
-            }));
+            setVoiceState({
+              toolResult: data,
+              connectionHistory: [...(voiceState.connectionHistory || []), historyEntry],
+            });
           }
           
           // Handle transcript updates
