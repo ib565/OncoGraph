@@ -279,7 +279,7 @@ export default function VoicePanel() {
       return;
     }
     
-    console.log("Attaching audio track", track.sid, "state:", track.state);
+    console.log("Attaching audio track", track.sid);
     
     try {
       // Attach the track to the audio element
