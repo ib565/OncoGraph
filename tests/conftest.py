@@ -1,9 +1,10 @@
-"""Pytest configuration for making the src package importable."""
+"""Pytest configuration for making the src package importable and isolating side effects."""
 
 import sys
 from pathlib import Path
 
 import pytest
+from dotenv import load_dotenv
 
 from pipeline.utils import TTLCache
 
@@ -12,6 +13,11 @@ SRC_DIR = ROOT_DIR / "src"
 
 if SRC_DIR.exists():
     sys.path.insert(0, str(SRC_DIR))
+
+# Load environment variables from .env once for the entire test session.
+# This allows integration tests (e.g., Neo4j-backed tests) to reuse the same
+# configuration as the API and CLI without duplicating setup logic.
+load_dotenv()
 
 
 @pytest.fixture(autouse=True)

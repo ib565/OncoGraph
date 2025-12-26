@@ -6,7 +6,7 @@ import asyncio
 import json
 import os
 import threading
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from functools import lru_cache
 from pathlib import Path
 from queue import Empty
@@ -97,6 +97,16 @@ class EnrichmentResponse(BaseModel):
 class FeedbackRequest(BaseModel):
     run_id: str = Field(..., min_length=1, description="Run ID to associate feedback with")
     cypher_correct: bool = Field(..., description="Whether the generated Cypher query was correct")
+
+
+class VoiceTokenRequest(BaseModel):
+    room_name: str = Field(..., min_length=1, description="LiveKit room name")
+    user_identity: str = Field(default="user", description="User identity for the token")
+
+
+class VoiceTokenResponse(BaseModel):
+    token: str
+    url: str
 
 
 @lru_cache(maxsize=1)
@@ -1224,4 +1234,78 @@ def analyze_genes(
                 "error_type": type(exc).__name__,
                 "step": "enrichment_analysis",
             },
+        ) from exc
+
+
+# LiveKit token generation
+try:
+    from livekit import api as livekit_api
+except ImportError:
+    livekit_api = None
+
+
+@app.post("/voice/token", response_model=VoiceTokenResponse)
+def get_voice_token(body: VoiceTokenRequest) -> VoiceTokenResponse:
+    """Generate LiveKit access token for voice agent sessions.
+
+    Args:
+        body: Request with room_name and optional user_identity
+
+    Returns:
+        Token and LiveKit URL for connecting to the room
+    """
+    if livekit_api is None:
+        raise HTTPException(
+            status_code=500,
+            detail="LiveKit SDK not available. Please install livekit package.",
+        )
+
+    livekit_url = os.getenv("LIVEKIT_URL", "").strip()
+    livekit_api_key = os.getenv("LIVEKIT_API_KEY", "").strip()
+    livekit_api_secret = os.getenv("LIVEKIT_API_SECRET", "").strip()
+
+    if not livekit_url:
+        raise HTTPException(
+            status_code=500,
+            detail="LIVEKIT_URL environment variable is not set",
+        )
+    if not livekit_api_key:
+        raise HTTPException(
+            status_code=500,
+            detail="LIVEKIT_API_KEY environment variable is not set",
+        )
+    if not livekit_api_secret:
+        raise HTTPException(
+            status_code=500,
+            detail="LIVEKIT_API_SECRET environment variable is not set",
+        )
+
+    try:
+        # Create access token with permissions
+        token = (
+            livekit_api.AccessToken(livekit_api_key, livekit_api_secret)
+            .with_identity(body.user_identity)
+            .with_name(body.user_identity)
+            .with_grants(
+                livekit_api.VideoGrants(
+                    room_join=True,
+                    room=body.room_name,
+                    can_publish=True,
+                    can_subscribe=True,
+                    can_publish_data=True,
+                )
+            )
+        )
+
+        # Set expiration to 1 hour (with_ttl expects a datetime.timedelta)
+        token.with_ttl(timedelta(hours=1))
+
+        # Generate JWT token
+        jwt_token = token.to_jwt()
+
+        return VoiceTokenResponse(token=jwt_token, url=livekit_url)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate LiveKit token: {str(exc)}",
         ) from exc

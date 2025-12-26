@@ -74,13 +74,52 @@ type HypothesisState = {
   isSummaryLoading: boolean;
 };
 
+// Types for Voice Agent state
+type OncoGraphToolResult = {
+  status: "ok" | "needs_clarification" | "no_results" | "not_supported" | "error";
+  confidence: number;
+  entities: {
+    gene: string | null;
+    therapy: string | null;
+    disease: string | null;
+    variant: string | null;
+  };
+  message: string | null;
+  voice: {
+    speak_top_n: number;
+  };
+  payload: any | null;
+};
+
+type VoiceConnectionHistory = {
+  timestamp: number;
+  userTranscript: string;
+  agentResponse: string;
+  toolResult: OncoGraphToolResult | null;
+};
+
+type VoiceState = {
+  isConnected: boolean;
+  isListening: boolean;
+  isAgentSpeaking: boolean;
+  roomName: string | null;
+  userTranscript: string | null;
+  agentResponse: string | null;
+  toolResult: OncoGraphToolResult | null;
+  error: string | null;
+  connectionHistory: VoiceConnectionHistory[];
+};
+
 type AppState = {
   graphState: GraphState;
   hypothesisState: HypothesisState;
+  voiceState: VoiceState;
   setGraphState: (state: Partial<GraphState>) => void;
   setHypothesisState: (state: Partial<HypothesisState>) => void;
+  setVoiceState: (state: Partial<VoiceState>) => void;
   clearGraphState: () => void;
   clearHypothesisState: () => void;
+  clearVoiceState: () => void;
   clearAllState: () => void;
 };
 
@@ -105,10 +144,23 @@ const initialState: AppState = {
     isLoadingPreset: false,
     isSummaryLoading: false,
   },
+  voiceState: {
+    isConnected: false,
+    isListening: false,
+    isAgentSpeaking: false,
+    roomName: null,
+    userTranscript: null,
+    agentResponse: null,
+    toolResult: null,
+    error: null,
+    connectionHistory: [],
+  },
   setGraphState: () => {},
   setHypothesisState: () => {},
+  setVoiceState: () => {},
   clearGraphState: () => {},
   clearHypothesisState: () => {},
+  clearVoiceState: () => {},
   clearAllState: () => {},
 };
 
@@ -117,6 +169,7 @@ const AppContext = createContext<AppState>(initialState);
 // Storage keys
 const GRAPH_STATE_KEY = 'oncograph_graph_state';
 const HYPOTHESIS_STATE_KEY = 'oncograph_hypothesis_state';
+const VOICE_STATE_KEY = 'oncograph_voice_state';
 
 // Helper functions for localStorage
 const saveToStorage = (key: string, data: any) => {
@@ -142,11 +195,13 @@ const loadFromStorage = (key: string) => {
 export function AppProvider({ children }: { children: ReactNode }) {
   const [graphState, setGraphStateInternal] = useState<GraphState>(initialState.graphState);
   const [hypothesisState, setHypothesisStateInternal] = useState<HypothesisState>(initialState.hypothesisState);
+  const [voiceState, setVoiceStateInternal] = useState<VoiceState>(initialState.voiceState);
 
   // Load state from localStorage on mount
   useEffect(() => {
     const savedGraphState = loadFromStorage(GRAPH_STATE_KEY);
     const savedHypothesisState = loadFromStorage(HYPOTHESIS_STATE_KEY);
+    const savedVoiceState = loadFromStorage(VOICE_STATE_KEY);
 
     if (savedGraphState) {
       setGraphStateInternal(savedGraphState);
@@ -167,6 +222,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
       setHypothesisStateInternal(savedHypothesisState);
     }
+    if (savedVoiceState) {
+      // Ensure connectionHistory exists and is an array
+      if (!savedVoiceState.connectionHistory || !Array.isArray(savedVoiceState.connectionHistory)) {
+        savedVoiceState.connectionHistory = [];
+      }
+      // Reset connection state on load (don't restore active connections)
+      savedVoiceState.isConnected = false;
+      savedVoiceState.isListening = false;
+      savedVoiceState.isAgentSpeaking = false;
+      setVoiceStateInternal(savedVoiceState);
+    }
   }, []);
 
   // Save state to localStorage whenever it changes
@@ -178,12 +244,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     saveToStorage(HYPOTHESIS_STATE_KEY, hypothesisState);
   }, [hypothesisState]);
 
+  useEffect(() => {
+    saveToStorage(VOICE_STATE_KEY, voiceState);
+  }, [voiceState]);
+
   const setGraphState = (newState: Partial<GraphState>) => {
     setGraphStateInternal(prev => ({ ...prev, ...newState }));
   };
 
   const setHypothesisState = (newState: Partial<HypothesisState>) => {
     setHypothesisStateInternal(prev => ({ ...prev, ...newState }));
+  };
+
+  const setVoiceState = (newState: Partial<VoiceState>) => {
+    setVoiceStateInternal(prev => ({ ...prev, ...newState }));
   };
 
   const clearGraphState = () => {
@@ -200,18 +274,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const clearVoiceState = () => {
+    setVoiceStateInternal(initialState.voiceState);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(VOICE_STATE_KEY);
+    }
+  };
+
   const clearAllState = () => {
     clearGraphState();
     clearHypothesisState();
+    clearVoiceState();
   };
 
   const value: AppState = {
     graphState,
     hypothesisState,
+    voiceState,
     setGraphState,
     setHypothesisState,
+    setVoiceState,
     clearGraphState,
     clearHypothesisState,
+    clearVoiceState,
     clearAllState,
   };
 
@@ -231,4 +316,4 @@ export function useAppContext() {
 }
 
 // Export types for use in components
-export type { QueryResponse, GraphState, EnrichmentResponse, PartialEnrichmentResult, SummaryResult, HypothesisState };
+export type { QueryResponse, GraphState, EnrichmentResponse, PartialEnrichmentResult, SummaryResult, HypothesisState, VoiceState, OncoGraphToolResult, VoiceConnectionHistory };
