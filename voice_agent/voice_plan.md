@@ -45,7 +45,7 @@ The system is designed for low latency (<2 seconds for template-matched queries)
 - Integrated LiveKit agent framework (`voice_agent/voice_server.py`)
 - Connected Gemini Flash Lite as conversational LLM via LiveKit Inference
 - Registered OncoGraph tool (`oncograph_query`) for function calling
-- Added Deepgram STT (Nova-3) and Cartesia TTS (Sonic-3) via LiveKit Inference
+- Added Deepgram STT (Nova-3-Medical) and Cartesia TTS (Sonic-3) via LiveKit Inference
 - Configured logging to suppress verbose third-party DEBUG logs
 - Tested end-to-end locally: agent successfully processes voice queries and calls tool
 - Note: Stage 6 uses LiveKit Cloud for hosting, but tested locally first
@@ -1423,7 +1423,7 @@ This matches LiveKit's standard model: the agent is a normal Python process that
     - Status handling (`ok`, `needs_clarification`, `no_results`, `not_supported`, `error`).
 - **STT (Deepgram):**
   - Configure Deepgram as the STT model via LiveKit Inference (preferred) or the Deepgram STT plugin.
-  - Set language (e.g. `en`) and a high-accuracy model (e.g. Nova 3) tuned for medical-ish terminology.
+  - Set language (e.g. `en`) and a high-accuracy model (e.g. Nova-3-Medical) tuned for medical terminology.
 - **TTS (Cartesia):**
   - Configure Cartesia TTS via LiveKit Inference (preferred) or Cartesia TTS plugin.
   - Choose a default Cartesia voice (clear, neutral, professional) and keep speaking rate natural.
@@ -1500,7 +1500,7 @@ This matches LiveKit's standard model: the agent is a normal Python process that
 - **Tool Definition**: Implemented `oncograph_query` as `@function_tool()` that calls `handle_query()` and returns `OncoGraphToolResult` as dict
 - **Models via LiveKit Inference**:
   - LLM: `google/gemini-2.5-flash-lite`
-  - STT: `deepgram/nova-3:en`
+  - STT: `deepgram/nova-3-medical:en`
   - TTS: `cartesia/sonic-3:9626c31c-bec5-4cca-baa8-f8ba9e84c8bc`
 - **System Instructions**: Comprehensive prompt covering tool usage, status handling, and voice constraints
 - **Logging Configuration**: Suppressed verbose DEBUG logs from Neo4j, httpx, and other third-party libraries while keeping INFO logs for agent lifecycle and query processing
@@ -2033,7 +2033,7 @@ Test all 10 query types:
 
 ---
 
-## Stage 9: Demo Polish (Recruiter “Wow”)
+## Stage 9: Demo Polish
 
 **Goal:** Crisp, predictable demo.
 
