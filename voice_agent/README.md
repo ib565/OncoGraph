@@ -84,7 +84,7 @@ User speech → STT → Gemini Flash → [oncograph_query tool] → Neo4j → Re
 
 **Direct Neo4j connection:** Agent connects directly to Neo4j (no API hop) for lower latency. Entity index rebuilds on startup (~1–2s) to stay fresh.
 
-**LiveKit Agents:** Uses LiveKit's framework for voice I/O, room management, and tool registration. Models via LiveKit Inference (Gemini Flash Lite, Deepgram Nova-3, Cartesia Sonic-3) to simplify deployment.
+**LiveKit Agents:** Uses LiveKit's framework for voice I/O, room management, and tool registration. Models via LiveKit Inference (Gemini Flash Lite, Deepgram Nova-3-Medical, Cartesia Sonic-3) to simplify deployment.
 
 ## Supported Query Types
 
@@ -160,5 +160,6 @@ voice_agent/
 
 ## See Also
 
+- [Architecture Diagram](ARCHITECTURE.md) - Visual system architecture
 - [Technical Details](../docs/TECHNICAL_DETAILS.md) - OncoGraph system architecture
 
