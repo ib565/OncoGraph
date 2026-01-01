@@ -1,8 +1,8 @@
 # OncoGraph
 
-**Knowledge-graph Q&A + pathway enrichment for oncology research w/ fine-tuned models for text-to-Cypher**
+**Knowledge-graph Q&A + pathway enrichment for oncology research w/ fine-tuned models and a voice agent**
 
-[Try the live deployment](https://oncograph.vercel.app/) | [Watch the 2-min demo](https://www.youtube.com/watch?v=1XboGF-kAmI) | [Fine-Tuned Models](docs/FINETUNING_OVERVIEW.md) | [📊 Model Evaluation](https://ib565.github.io/OncoGraph/model_evaluation_report.html)
+[Try the live deployment](https://oncograph.vercel.app/) | [Watch the 2-min demo](https://www.youtube.com/watch?v=1XboGF-kAmI) | [Fine-Tuned Models](docs/FINETUNING_OVERVIEW.md) | [📊 Model Evaluation](https://ib565.github.io/OncoGraph/model_evaluation_report.html) | [🎤 Voice Agent](voice_agent/README.md) | [Voice Architecture](voice_agent/ARCHITECTURE.md)
 
 **For developers:** 
 - [Technical Details](docs/TECHNICAL_DETAILS.md) — Architecture, security, testing, etc
