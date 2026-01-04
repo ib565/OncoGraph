@@ -4,7 +4,7 @@ High-level system architecture diagram. For detailed component descriptions, per
 
 ## System Architecture
 
-The voice agent uses a two-tier architecture: a **Fast-Path Query Engine** for sub-2-second graph queries, and a **Conversational Agent** that handles voice I/O and natural language generation.
+The voice agent uses a two-tier architecture: a **Fast-Path Query Engine** for ~3-second graph queries, and a **Conversational Agent** that handles voice I/O and natural language generation.
 
 <div style="max-height: 600px; overflow: auto; border: 1px solid #e1e4e8; border-radius: 6px; padding: 10px;">
 

@@ -12,7 +12,7 @@ This document covers the complete implementation of the OncoGraph voice AI agent
 
 2. **Conversational Agent** (Stage 6+): A Gemini Flash-powered conversational agent that handles greetings, clarifications, and natural language generation, calling the fast-path tool when graph queries are needed. Integrated with the existing OncoGraph web frontend (Stage 7) and deployed to LiveKit Cloud (Stage 8).
 
-The system is designed for low latency (<2 seconds for template-matched queries) and voice-friendly responses (1-3 sentences, top N items, natural phrasing).
+The system is designed for low latency (~3 seconds for template-matched queries) and voice-friendly responses (1-3 sentences, top N items, natural phrasing).
 
 ## Current Progress
 
@@ -53,7 +53,7 @@ The system is designed for low latency (<2 seconds for template-matched queries)
 
 
 ### Target Latency
-- Template-matched queries: <2 seconds end-to-end
+- Template-matched queries: ~3 seconds end-to-end
 - Complex queries (fallback): acknowledge immediately, process in background
 
 ### Architecture Pipeline
@@ -848,12 +848,12 @@ Add timing logs for each step:
 - Cypher execution
 - Total end-to-end
 
-Target breakdown:
-- Router: <500ms
+Typical breakdown:
+- Router: ~1s
 - Normalization: <10ms
-- Cypher: <500ms
+- Cypher: ~1s
 - Formatting: <10ms
-- **Total: <1.5s**
+- **Total: ~3s**
 
 ### 4.5 Testing Without Voice
 

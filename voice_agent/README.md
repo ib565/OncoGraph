@@ -1,6 +1,6 @@
 # OncoGraph Voice Agent
 
-Voice interface for querying the OncoGraph oncology knowledge graph. Ask questions about biomarkers, therapies, genes, variants, and diseases. Template-matched queries respond in under 2 seconds.
+Voice interface for querying the OncoGraph oncology knowledge graph. Ask questions about biomarkers, therapies, genes, variants, and diseases. Template-matched queries respond in ~3 seconds.
 
 > **Note:** The voice agent is implemented and tested locally but **not yet deployed** due to inference budget constraints. It will not work out of the box. Interested in seeing a demo? [Get in touch](mailto:ish.bhartiya@gmail.com).
 
@@ -76,7 +76,7 @@ User speech → STT → Gemini Flash → [oncograph_query tool] → Neo4j → Re
 
 ## Key Technical Decisions
 
-**Templates for speed:** The standard query engine uses LLM-generated Cypher (5–30s). Templates cut this to <2s by using pre-written queries for common patterns. Each template handles biomarker collapsing, evidence aggregation, and synonym matching.
+**Templates for speed:** The standard query engine uses LLM-generated Cypher (5–30s). Templates cut this to ~3s by using pre-written queries for common patterns. Each template handles biomarker collapsing, evidence aggregation, and synonym matching.
 
 **Entity normalization:** Built in-memory indexes at startup from Neo4j (genes, therapies, diseases with synonyms). Handles common variations (KRAS/kras, cetuximab/Erbitux) without extra LLM calls. Diseases fall back to fuzzy matching if not in index.
 
@@ -107,12 +107,12 @@ Other intents: greetings, complex queries (not supported), unclear queries.
 
 ## Performance
 
-**Target:** <2 seconds end-to-end for template-matched queries.
+**Typical latency:** ~3 seconds end-to-end for template-matched queries.
 
 **Breakdown:**
-- Router (intent classification): <500ms
+- Router (intent classification): ~1s
 - Entity normalization: <10ms
-- Cypher execution: <500ms
+- Cypher execution: ~1s
 - Formatting: <10ms
 
 **Why it's fast:**
