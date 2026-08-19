@@ -1,0 +1,47 @@
+name: Keep graph alive
+
+# Aura free instances pause after roughly 3 days without activity and are
+# deleted after about 30 days paused. That is how the previous instance was
+# lost, taking the whole demo down silently. This runs a real (cheap) query
+# against the graph often enough that it never reaches the pause threshold.
+#
+# /graph-gene-sets needs no credentials and does touch Neo4j, so no secrets
+# are required here. Render free services sleep after ~15 minutes idle and
+# wake on request, so the first call may take up to a minute -- that is
+# expected, and waking it is part of the point.
+
+on:
+  schedule:
+    # 06:00 UTC every second day
+    - cron: "0 6 */2 * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Query the knowledge graph
+        run: |
+          for attempt in 1 2 3; do
+            echo "attempt $attempt"
+            code=$(curl -sS -X POST "https://oncograph.onrender.com/graph-gene-sets" \
+              -H "Content-Type: application/json" \
+              -d '{"preset_id": "lung_therapy_genes"}' \
+              --max-time 180 \
+              -o response.json -w "%{http_code}") || code="000"
+
+            if [ "$code" = "200" ]; then
+              echo "graph responded 200:"
+              head -c 400 response.json; echo
+              exit 0
+            fi
+
+            echo "got HTTP $code"
+            head -c 400 response.json 2>/dev/null; echo
+            sleep 30
+          done
+
+          echo "::error::Graph did not respond successfully after 3 attempts."
+          echo "If this keeps failing the Aura instance may be paused or deleted."
+          exit 1
