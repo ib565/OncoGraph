@@ -30,7 +30,7 @@ def _build_engine() -> QueryEngine:
     pipeline_config = PipelineConfig()
 
     gemini_config = GeminiConfig(
-        model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
+        model=os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite"),
         temperature=float(os.getenv("GEMINI_TEMPERATURE", "0.1")),
         api_key=os.getenv("GOOGLE_API_KEY"),
         api_key_alt=os.getenv("GOOGLE_API_KEY_ALT"),

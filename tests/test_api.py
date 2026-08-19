@@ -68,7 +68,10 @@ def test_query_pipeline_error_returns_400(app_client: TestClient) -> None:
 
     assert response.status_code == 400
     payload = response.json()
-    assert payload["detail"]["message"] == "validation failed"
+    # `message` is what the web UI renders, so it must be the visitor-facing
+    # wording; the raw exception text moves to `technical_message`.
+    assert payload["detail"]["message"] == main._STEP_USER_ERRORS["validate_cypher"]
+    assert payload["detail"]["technical_message"] == "validation failed"
     assert payload["detail"]["step"] == "validate_cypher"
 
 
@@ -79,7 +82,25 @@ def test_query_unhandled_error_returns_500(app_client: TestClient) -> None:
 
     assert response.status_code == 500
     payload = response.json()
-    assert payload["detail"]["message"] == "boom"
+    assert payload["detail"]["message"] == main._GENERIC_USER_ERROR
+    assert payload["detail"]["technical_message"] == "boom"
+
+
+def test_query_error_message_does_not_leak_internals(app_client: TestClient) -> None:
+    """A driver-level failure must not put hostnames or stack detail in the UI."""
+    cause = RuntimeError(
+        "Couldn't connect to 9663c540.databases.neo4j.io:7687: Failed to DNS resolve address"
+    )
+    error = PipelineError(f"Cypher execution failed: {cause}", step="execute_read")
+    error.__cause__ = cause
+    main.app.dependency_overrides[main.get_engine] = lambda: ErrorEngine(error)
+
+    response = app_client.post("/query", json={"question": "KRAS"})
+
+    assert response.status_code == 400
+    shown = response.json()["detail"]["message"].lower()
+    for leak in ("neo4j", "databases.neo4j.io", "9663c540", "dns", "traceback"):
+        assert leak not in shown
 
 
 def test_query_returns_run_id(app_client: TestClient) -> None:

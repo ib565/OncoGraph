@@ -113,22 +113,35 @@ class VoiceTokenResponse(BaseModel):
 def build_engine() -> QueryEngine:
     config = PipelineConfig()
 
+    # Model selection is driven by free-tier quota as much as by capability.
+    #
+    # On the current free tier the Flash models allow 20 requests/day while the
+    # Flash Lite models allow 500. Each model has its own independent bucket, so
+    # spreading the three pipeline stages across two Lite models multiplies the
+    # daily ceiling instead of sharing one. A single /query costs one call to
+    # each stage, so with the defaults below the binding limit is the expander +
+    # summarizer pair sharing 3.1-flash-lite: ~250 queries/day, against ~10/day
+    # when every stage ran on 2.5-flash.
+    #
+    # Override any of these if quality matters more than volume for a stage --
+    # gemini-3.5-flash is the stronger choice for Cypher generation, at the cost
+    # of dropping that stage's ceiling back to 20 requests/day.
     gemini_instruction_expander_config = GeminiConfig(
-        model=os.getenv("GEMINI_INSTRUCTION_EXPANDER_MODEL", "gemini-2.5-flash"),
+        model=os.getenv("GEMINI_INSTRUCTION_EXPANDER_MODEL", "gemini-3.1-flash-lite"),
         temperature=float(os.getenv("GEMINI_INSTRUCTION_EXPANDER_TEMPERATURE", "0.1")),
         api_key=os.getenv("GOOGLE_API_KEY"),
         api_key_alt=os.getenv("GOOGLE_API_KEY_ALT"),
     )
 
     gemini_cypher_generator_config = GeminiConfig(
-        model=os.getenv("GEMINI_CYPHER_GENERATOR_MODEL", "gemini-2.5-flash"),
+        model=os.getenv("GEMINI_CYPHER_GENERATOR_MODEL", "gemini-3.5-flash-lite"),
         temperature=float(os.getenv("GEMINI_CYPHER_GENERATOR_TEMPERATURE", "0.1")),
         api_key=os.getenv("GOOGLE_API_KEY"),
         api_key_alt=os.getenv("GOOGLE_API_KEY_ALT"),
     )
 
     gemini_summarizer_config = GeminiConfig(
-        model=os.getenv("GEMINI_SUMMARIZER_MODEL", "gemini-2.5-flash-lite"),
+        model=os.getenv("GEMINI_SUMMARIZER_MODEL", "gemini-3.1-flash-lite"),
         temperature=float(os.getenv("GEMINI_SUMMARIZER_TEMPERATURE", "0.1")),
         api_key=os.getenv("GOOGLE_API_KEY"),
         api_key_alt=os.getenv("GOOGLE_API_KEY_ALT"),
@@ -188,12 +201,93 @@ def get_enrichment_analyzer() -> GeneEnrichmentAnalyzer:
 def get_enrichment_summarizer() -> GeminiEnrichmentSummarizer:
     """Get cached enrichment summarizer instance."""
     config = GeminiConfig(
-        model=os.getenv("GEMINI_SUMMARIZER_MODEL", "gemini-2.5-flash"),
+        model=os.getenv("GEMINI_SUMMARIZER_MODEL", "gemini-3.1-flash-lite"),
         temperature=float(os.getenv("GEMINI_SUMMARIZER_TEMPERATURE", "0.1")),
         api_key=os.getenv("GOOGLE_API_KEY"),
         api_key_alt=os.getenv("GOOGLE_API_KEY_ALT"),
     )
     return GeminiEnrichmentSummarizer(config=config)
+
+
+# Fallback used when nothing more specific matches.
+_GENERIC_USER_ERROR = (
+    "Something went wrong while answering that question. The full details have been "
+    "logged. Please try again, or try one of the example questions."
+)
+
+# Substrings matched case-insensitively against the exception chain, in order.
+# First match wins, so put the more specific signatures first.
+_ERROR_SIGNATURES: tuple[tuple[tuple[str, ...], str], ...] = (
+    (
+        ("resource_exhausted", "resourceexhausted", "429", "quota", "rate limit", "rate_limit"),
+        "OncoGraph has hit its daily limit for AI-generated queries. The free tier this demo "
+        "runs on allows a limited number of questions per day, and it resets at midnight "
+        "Pacific time. The graph itself is unaffected -- please try again tomorrow.",
+    ),
+    (
+        ("unauthorized", "autherror", "authentication failure", "security.unauthorized"),
+        "OncoGraph can't sign in to the knowledge graph right now. This is a configuration "
+        "problem on our side, not something you did.",
+    ),
+    (
+        ("serviceunavailable", "sessionexpired", "dns", "unable to retrieve routing", "connection refused", "timed out"),
+        "The knowledge graph is temporarily unreachable, so this question can't be answered "
+        "right now. This demo runs on free-tier infrastructure that sleeps when idle -- "
+        "waiting a moment and retrying often works.",
+    ),
+)
+
+# Per-pipeline-step messages, used when the exception chain has no known signature.
+_STEP_USER_ERRORS: dict[str, str] = {
+    "expand_instructions": (
+        "OncoGraph couldn't interpret that question. Try rephrasing it, or start from one of "
+        "the example questions."
+    ),
+    "generate_cypher": (
+        "OncoGraph understood the question but couldn't turn it into a valid graph query. "
+        "Try asking it a different way -- questions about genes, variants, therapies and "
+        "diseases work best."
+    ),
+    "validate_cypher": (
+        "The query OncoGraph generated didn't pass safety validation, so it wasn't run. "
+        "Try rephrasing the question."
+    ),
+    "execute_read": (
+        "The knowledge graph couldn't run that query. This demo runs on free-tier "
+        "infrastructure -- waiting a moment and retrying often works."
+    ),
+    "summarize": (
+        "OncoGraph found an answer but couldn't write up the summary. Try asking again."
+    ),
+}
+
+
+def user_facing_error(exc: BaseException, step: str | None = None) -> str:
+    """Translate an internal exception into something safe to show a visitor.
+
+    Raw exception text used to be passed straight through to the UI, which meant
+    visitors saw driver stack traces and internal hostnames. The full detail is
+    still recorded in the trace sink and returned under `technical_message`; this
+    is only what gets rendered.
+    """
+    chain: list[str] = []
+    seen: set[int] = set()
+    current: BaseException | None = exc
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        chain.append(type(current).__name__)
+        chain.append(str(current))
+        current = current.__cause__ or current.__context__
+
+    haystack = " ".join(chain).lower()
+    for needles, message in _ERROR_SIGNATURES:
+        if any(needle in haystack for needle in needles):
+            return message
+
+    if step and step in _STEP_USER_ERRORS:
+        return _STEP_USER_ERRORS[step]
+
+    return _GENERIC_USER_ERROR
 
 
 app = FastAPI(title="OncoGraph API", version="0.1.0")
@@ -268,9 +362,11 @@ def query(
         if traced_engine.trace is not None:
             traced_engine.trace.record("error", error_details)
 
-        # Create detailed error response
+        # `message` is rendered directly by the web UI, so it carries the
+        # visitor-facing wording; the raw text stays in `technical_message`.
         detail_response = {
-            "message": str(exc),
+            "message": user_facing_error(exc, exc.step),
+            "technical_message": str(exc),
             "step": exc.step,
             "error_type": type(exc).__name__,
         }
@@ -306,9 +402,10 @@ def query(
         if traced_engine.trace is not None:
             traced_engine.trace.record("error", error_details)
 
-        # Create detailed error response
+        # As above: friendly text in `message`, raw text kept alongside it.
         detail_response = {
-            "message": str(exc),
+            "message": user_facing_error(exc),
+            "technical_message": str(exc),
             "error_type": type(exc).__name__,
             "step": "unknown",
         }
@@ -420,7 +517,8 @@ def query_stream(
         except PipelineError as exc:
             # Create detailed error information
             error_info = {
-                "message": str(exc),
+                "message": user_facing_error(exc, exc.step),
+                "technical_message": str(exc),
                 "step": exc.step,
                 "error_type": type(exc).__name__,
             }
@@ -442,7 +540,8 @@ def query_stream(
         except Exception as exc:  # pragma: no cover - defensive
             # Create detailed error information for unexpected exceptions
             error_info = {
-                "message": str(exc),
+                "message": user_facing_error(exc),
+                "technical_message": str(exc),
                 "step": "unknown",
                 "error_type": type(exc).__name__,
             }
@@ -702,7 +801,13 @@ def get_gene_set(
         return GeneSetResponse(genes=genes, description=preset["description"])
 
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch gene set: {str(exc)}") from exc
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "message": user_facing_error(exc, "execute_read"),
+                "technical_message": f"Failed to fetch gene set: {exc}",
+            },
+        ) from exc
 
 
 @app.get("/analyze/genes/stream")
